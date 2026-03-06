@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
-║                    🔴🏴 SHARP - FRONT 16 RJ 🏴🔴                          ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 10.0 - FINAL                    ║
-║         RADAR AUTOMÁTICO COM TIMER DE 5 SEGUNDOS - HORÁRIO DE BRASÍLIA       ║
-║              "A informação é nossa arma mais poderosa"                       ║
+║                    [Vermelho][Preto] SHARP - FRONT 16 RJ [Preto][Vermelho]   ║
+║              SISTEMA SUPREMO ANTIFA - VERSAO 10.0 - FINAL                    ║
+║         RADAR AUTOMATICO COM TIMER DE 5 SEGUNDOS - HORARIO DE BRASILIA       ║
+║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -41,15 +41,15 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ============================================
-# CONFIGURAÇÕES PROFISSIONAIS AVANÇADAS
+# CONFIGURACOES PROFISSIONAIS AVANCADAS
 # ============================================
 
 class Config:
-    """Configurações avançadas do sistema supremo antifa"""
+    """Configuracoes avancadas do sistema supremo antifa"""
     
     # Identidade
     NOME_SITE = "SHARP - FRONT 16 RJ"
-    LEMA = "A informação é nossa arma mais poderosa"
+    LEMA = "A informacao e nossa arma mais poderosa"
     COR_PRIMARIA = "#ff0000"  # Vermelho
     COR_SECUNDARIA = "#000000"  # Preto
     
@@ -64,8 +64,8 @@ class Config:
     TEMPO_ATUALIZACAO = 10  # minutos
     TIMEOUT_REQUISICAO = 8  # segundos
     TIMEOUT_TOTAL = 30  # segundos
-    DELAY_ENTRE_REQUISICOES = 5  # ⏱️ 5 SEGUNDOS entre cada site (mais seguro)
-    DELAY_INICIAL = 2  # segundos antes de começar
+    DELAY_ENTRE_REQUISICOES = 5  # 5 SEGUNDOS entre cada site (mais seguro)
+    DELAY_INICIAL = 2  # segundos antes de comecar
     
     # Limites
     MAX_NOTICIAS_POR_FONTE = 5
@@ -85,23 +85,23 @@ class Config:
         'Cache-Control': 'max-age=0',
     }
     
-    # Horário
-    TIMEZONE = -3  # Brasília (UTC-3)
+    # Horario
+    TIMEZONE = -3  # Brasilia (UTC-3)
 
 config = Config()
 
 # ============================================
-# FUNÇÃO PARA HORÁRIO DE BRASÍLIA
+# FUNCAO PARA HORARIO DE BRASILIA
 # ============================================
 
 def horario_brasilia():
-    """Retorna o horário atual de Brasília"""
+    """Retorna o horario atual de Brasilia"""
     utc = datetime.utcnow()
     brasilia = utc - timedelta(hours=3)  # UTC-3
     return brasilia.strftime('%d/%m/%Y %H:%M:%S')
 
 def hora_brasilia():
-    """Retorna apenas a hora de Brasília"""
+    """Retorna apenas a hora de Brasilia"""
     utc = datetime.utcnow()
     brasilia = utc - timedelta(hours=3)
     return brasilia.strftime('%H:%M')
@@ -112,7 +112,7 @@ def hora_brasilia():
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - 🔴🏴 %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - [Vermelho][Preto] %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler(config.ARQUIVO_LOG),
         logging.StreamHandler()
@@ -125,7 +125,7 @@ logger = logging.getLogger('ANTIFA-RADAR')
 # ============================================
 
 class ProxyManagerSupremo:
-    """Gerencia rotação de proxies para evitar bloqueios"""
+    """Gerencia rotacao de proxies para evitar bloqueios"""
     
     def __init__(self):
         self.proxies_http = []
@@ -137,7 +137,7 @@ class ProxyManagerSupremo:
         self.atualizar_lista()
     
     def atualizar_lista(self):
-        """Busca proxies públicos atualizados de múltiplas fontes"""
+        """Busca proxies publicos atualizados de multiplas fontes"""
         try:
             fontes_proxy = [
                 'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all',
@@ -171,13 +171,13 @@ class ProxyManagerSupremo:
             self.proxies_https = list(set(self.proxies_https))
             self.proxies_socks = list(set(self.proxies_socks))
             
-            logger.info(f"✅🏴 PROXYS CARREGADOS: HTTP={len(self.proxies_http)} HTTPS={len(self.proxies_https)} SOCKS={len(self.proxies_socks)}")
+            logger.info(f"[OK] PROXYS CARREGADOS: HTTP={len(self.proxies_http)} HTTPS={len(self.proxies_https)} SOCKS={len(self.proxies_socks)}")
             
         except Exception as e:
-            logger.error(f"❌ Erro ao carregar proxies: {e}")
+            logger.error(f"[Erro] ao carregar proxies: {e}")
     
     def obter_proxy(self, tipo='http'):
-        """Retorna um proxy aleatório da lista"""
+        """Retorna um proxy aleatorio da lista"""
         if tipo == 'https' and self.proxies_https:
             proxy = random.choice(self.proxies_https)
             return {tipo: f'http://{proxy}'}
@@ -202,31 +202,31 @@ class ProxyManagerSupremo:
 proxy_manager = ProxyManagerSupremo()
 
 # ============================================
-# PALAVRAS-CHAVE MULTILÍNGUE (FOCO ANTIFA)
+# PALAVRAS-CHAVE MULTILINGUE (FOCO ANTIFA)
 # ============================================
 
 PALAVRAS_CHAVE = {
-    # 🇧🇷 PORTUGUÊS (BRASIL)
+    # Brasil
     'pt': [
         'antifa', 'antifascista', 'fascismo', 'nazismo', 'neonazista',
-        'movimento social', 'protesto', 'manifestação', 'greve', 'ocupação',
-        'direitos humanos', 'igualdade', 'racismo', 'feminismo', 'lgbtqia+',
+        'movimento social', 'protesto', 'manifestacao', 'greve', 'ocupacao',
+        'direitos humanos', 'igualdade', 'racismo', 'feminismo', 'lgbtqia',
         'trabalhador', 'sindicato', 'sem terra', 'mst', 'mtst',
-        'comunismo', 'socialismo', 'anarquismo', 'resistência', 'luta',
-        'polícia', 'repressão', 'violência estatal', 'prisão política',
-        'liberdade', 'democracia', 'justiça social', 'reforma agrária',
-        'amazônia', 'indígena', 'quilombola', 'meio ambiente', 'sustentabilidade',
-        'governo', 'congresso', 'eleição', 'presidente', 'economia',
+        'comunismo', 'socialismo', 'anarquismo', 'resistencia', 'luta',
+        'policia', 'repressao', 'violencia estatal', 'prisao politica',
+        'liberdade', 'democracia', 'justica social', 'reforma agraria',
+        'amazonia', 'indigena', 'quilombola', 'meio ambiente', 'sustentabilidade',
+        'governo', 'congresso', 'eleicao', 'presidente', 'economia',
         'guerra', 'conflito', 'ataque', 'bomba', 'exercito', 'tropas',
-        'genocídio', 'ocupação', 'resistência', 'revolução',
-        'bolsonaro', 'lula', 'moro', 'dória', 'boulos',
+        'genocidio', 'ocupacao', 'revolucao',
+        'bolsonaro', 'lula', 'moro', 'doria', 'boulos',
     ],
     
-    # 🇺🇸 INGLÊS (INTERNACIONAL)
+    # Ingles
     'en': [
         'antifa', 'antifascist', 'fascism', 'nazism', 'neonazi',
         'social movement', 'protest', 'demonstration', 'strike', 'occupation',
-        'human rights', 'equality', 'racism', 'feminism', 'lgbtqia+',
+        'human rights', 'equality', 'racism', 'feminism', 'lgbtqia',
         'worker', 'union', 'landless', 'indigenous', 'black lives matter',
         'communism', 'socialism', 'anarchism', 'resistance', 'struggle',
         'police', 'repression', 'state violence', 'political prisoner',
@@ -237,83 +237,83 @@ PALAVRAS_CHAVE = {
         'trump', 'biden', 'putin', 'zelensky', 'netanyahu',
     ],
     
-    # 🇪🇸 ESPANHOL (AMÉRICA LATINA)
+    # Espanhol
     'es': [
         'antifa', 'antifascista', 'fascismo', 'nazismo', 'neonazi',
-        'movimiento social', 'protesta', 'manifestación', 'huelga', 'ocupación',
-        'derechos humanos', 'igualdad', 'racismo', 'feminismo', 'lgbtqia+',
-        'trabajador', 'sindicato', 'sin tierra', 'indígena', 'mapuche',
+        'movimiento social', 'protesta', 'manifestacion', 'huelga', 'ocupacion',
+        'derechos humanos', 'igualdad', 'racismo', 'feminismo', 'lgbtqia',
+        'trabajador', 'sindicato', 'sin tierra', 'indigena', 'mapuche',
         'comunismo', 'socialismo', 'anarquismo', 'resistencia', 'lucha',
-        'policía', 'represión', 'violencia estatal', 'preso político',
+        'policia', 'represion', 'violencia estatal', 'preso politico',
         'libertad', 'democracia', 'justicia social', 'reforma agraria',
-        'amazonía', 'medio ambiente', 'cambio climático', 'palestina',
-        'guerra', 'conflicto', 'ataque', 'bomba', 'ejército', 'tropas',
-        'genocidio', 'ocupación', 'resistencia', 'revolución',
-        'petro', 'milei', 'lula', 'bukele', 'lópez',
+        'amazonia', 'medio ambiente', 'cambio climatico', 'palestina',
+        'guerra', 'conflicto', 'ataque', 'bomba', 'ejercito', 'tropas',
+        'genocidio', 'ocupacion', 'resistencia', 'revolucion',
+        'petro', 'milei', 'lula', 'bukele', 'lopez',
     ],
 }
 
 # ============================================
-# FONTES CONFIÁVEIS (NACIONAL E INTERNACIONAL)
+# FONTES CONFIABEIS (NACIONAL E INTERNACIONAL)
 # ============================================
 
 FONTES_CONFIAVEIS = [
-    # ===== 🇧🇷 BRASIL (NACIONAL) PRIORIDADE MÁXIMA =====
-    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 10, 'prioridade': 1},
-    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 10, 'prioridade': 1},
-    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
-    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
-    {'nome': 'The Intercept Brasil', 'pais': 'Brasil', 'url': 'https://theintercept.com/brasil/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8, 'prioridade': 1},
-    {'nome': 'Brasil 247', 'pais': 'Brasil', 'url': 'https://www.brasil247.com/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 7, 'prioridade': 1},
-    {'nome': 'Diário do Centro do Mundo', 'pais': 'Brasil', 'url': 'https://www.diariodocentrodomundo.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 7, 'prioridade': 1},
-    {'nome': 'Mídia Ninja', 'pais': 'Brasil', 'url': 'https://midianinja.org/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
-    {'nome': 'Jornalistas Livres', 'pais': 'Brasil', 'url': 'https://jornalistaslivres.org/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
-    {'nome': 'MTST', 'pais': 'Brasil', 'url': 'https://mtst.org/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
-    {'nome': 'UNE', 'pais': 'Brasil', 'url': 'https://une.org.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8, 'prioridade': 1},
-    {'nome': 'CUT', 'pais': 'Brasil', 'url': 'https://www.cut.org.br/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
-    {'nome': 'Folha de S.Paulo', 'pais': 'Brasil', 'url': 'https://feeds.folha.uol.com.br/emcimadahora/rss.xml', 'categoria': 'geral', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 6, 'prioridade': 2},
-    {'nome': 'O Globo', 'pais': 'Brasil', 'url': 'https://oglobo.globo.com/rss.xml', 'categoria': 'geral', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 6, 'prioridade': 2},
+    # ===== BRASIL (NACIONAL) PRIORIDADE MAXIMA =====
+    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 10, 'prioridade': 1},
+    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 10, 'prioridade': 1},
+    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'The Intercept Brasil', 'pais': 'Brasil', 'url': 'https://theintercept.com/brasil/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 8, 'prioridade': 1},
+    {'nome': 'Brasil 247', 'pais': 'Brasil', 'url': 'https://www.brasil247.com/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 7, 'prioridade': 1},
+    {'nome': 'Diario do Centro do Mundo', 'pais': 'Brasil', 'url': 'https://www.diariodocentrodomundo.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 7, 'prioridade': 1},
+    {'nome': 'Midia Ninja', 'pais': 'Brasil', 'url': 'https://midianinja.org/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'Jornalistas Livres', 'pais': 'Brasil', 'url': 'https://jornalistaslivres.org/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'MTST', 'pais': 'Brasil', 'url': 'https://mtst.org/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'UNE', 'pais': 'Brasil', 'url': 'https://une.org.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 8, 'prioridade': 1},
+    {'nome': 'CUT', 'pais': 'Brasil', 'url': 'https://www.cut.org.br/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'Folha de S.Paulo', 'pais': 'Brasil', 'url': 'https://feeds.folha.uol.com.br/emcimadahora/rss.xml', 'categoria': 'geral', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 6, 'prioridade': 2},
+    {'nome': 'O Globo', 'pais': 'Brasil', 'url': 'https://oglobo.globo.com/rss.xml', 'categoria': 'geral', 'idioma': 'pt', 'continente': 'America do Sul', 'confiabilidade': 6, 'prioridade': 2},
     
-    # ===== 🇵🇹 PORTUGAL =====
+    # ===== PORTUGAL =====
     {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'Europa', 'confiabilidade': 9, 'prioridade': 2},
     
-    # ===== 🌎 AMÉRICA LATINA =====
-    {'nome': 'Página 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Sul', 'confiabilidade': 8, 'prioridade': 2},
-    {'nome': 'La Jornada', 'pais': 'México', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Norte', 'confiabilidade': 8, 'prioridade': 2},
-    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Sul', 'confiabilidade': 7, 'prioridade': 2},
+    # ===== AMERICA LATINA =====
+    {'nome': 'Pagina 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'America do Sul', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'La Jornada', 'pais': 'Mexico', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'America do Norte', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'America do Sul', 'confiabilidade': 7, 'prioridade': 2},
     
-    # ===== 🇺🇸 USA / INTERNACIONAL =====
-    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9, 'prioridade': 2},
+    # ===== USA / INTERNACIONAL =====
+    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'America do Norte', 'confiabilidade': 9, 'prioridade': 2},
     {'nome': 'CrimethInc', 'pais': 'Global', 'url': 'https://crimethinc.com/feeds/all.atom.xml', 'categoria': 'anarquista', 'idioma': 'en', 'continente': 'Global', 'confiabilidade': 9, 'prioridade': 2},
     {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Global', 'confiabilidade': 9, 'prioridade': 2},
-    {'nome': 'Democracy Now', 'pais': 'USA', 'url': 'https://www.democracynow.org/podcast.xml', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9, 'prioridade': 2},
-    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8, 'prioridade': 2},
-    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9, 'prioridade': 2},
-    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8, 'prioridade': 2},
-    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'comunista', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'Democracy Now', 'pais': 'USA', 'url': 'https://www.democracynow.org/podcast.xml', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'America do Norte', 'confiabilidade': 9, 'prioridade': 2},
+    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'America do Norte', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'America do Norte', 'confiabilidade': 9, 'prioridade': 2},
+    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'America do Norte', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'comunista', 'idioma': 'en', 'continente': 'America do Norte', 'confiabilidade': 8, 'prioridade': 2},
     
-    # ===== 🇬🇧 UK / EUROPA =====
+    # ===== UK / EUROPA =====
     {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 9, 'prioridade': 2},
     {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 8, 'prioridade': 2},
     {'nome': 'Ceasefire Magazine', 'pais': 'UK', 'url': 'https://ceasefiremagazine.co.uk/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 8, 'prioridade': 2},
     
-    # ===== ORIENTE MÉDIO =====
-    {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio', 'confiabilidade': 8, 'prioridade': 2},
-    {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio', 'confiabilidade': 7, 'prioridade': 2},
-    {'nome': 'Haaretz', 'pais': 'Israel', 'url': 'https://www.haaretz.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio', 'confiabilidade': 7, 'prioridade': 2},
+    # ===== ORIENTE MEDIO =====
+    {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Medio', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Medio', 'confiabilidade': 7, 'prioridade': 2},
+    {'nome': 'Haaretz', 'pais': 'Israel', 'url': 'https://www.haaretz.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Medio', 'confiabilidade': 7, 'prioridade': 2},
     
-    # ===== ÁSIA =====
-    {'nome': 'The Hindu', 'pais': 'Índia', 'url': 'https://www.thehindu.com/news/feeder', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia', 'confiabilidade': 7, 'prioridade': 3},
-    {'nome': 'The Japan Times', 'pais': 'Japão', 'url': 'https://www.japantimes.co.jp/feed/', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia', 'confiabilidade': 7, 'prioridade': 3},
+    # ===== ASIA =====
+    {'nome': 'The Hindu', 'pais': 'India', 'url': 'https://www.thehindu.com/news/feeder', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Asia', 'confiabilidade': 7, 'prioridade': 3},
+    {'nome': 'The Japan Times', 'pais': 'Japao', 'url': 'https://www.japantimes.co.jp/feed/', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Asia', 'confiabilidade': 7, 'prioridade': 3},
 ]
 
 # ============================================
-# SISTEMA DE RADAR AUTOMÁTICO (SEM BOTÃO)
+# SISTEMA DE RADAR AUTOMATICO (SEM BOTAO)
 # ============================================
 
 @dataclass
 class NoticiaAntifa:
-    """Estrutura de dados para notícias"""
+    """Estrutura de dados para noticias"""
     id: str
     fonte: str
     pais: str
@@ -333,7 +333,7 @@ class NoticiaAntifa:
     horario_brasilia: str = field(default_factory=horario_brasilia)
 
 class RadarAutomaticoAntifa:
-    """Sistema de radar automático com timer de 5 segundos"""
+    """Sistema de radar automatico com timer de 5 segundos"""
     
     def __init__(self):
         self.fontes_ativas = []
@@ -354,7 +354,7 @@ class RadarAutomaticoAntifa:
         self.thread_radar = None
         
     def iniciar_radar_automatico(self):
-        """Inicia o radar automático em background (SEM BOTÃO)"""
+        """Inicia o radar automatico em background (SEM BOTAO)"""
         if self.radar_ativo:
             return
         
@@ -362,7 +362,7 @@ class RadarAutomaticoAntifa:
         self.thread_radar = threading.Thread(target=self._loop_radar)
         self.thread_radar.daemon = True
         self.thread_radar.start()
-        logger.info("🛰️🏴 RADAR AUTOMÁTICO INICIADO - 5 SEGUNDOS ENTRE FONTES")
+        logger.info("[Radar] RADAR AUTOMATICO INICIADO - 5 SEGUNDOS ENTRE FONTES")
     
     def _loop_radar(self):
         """Loop principal do radar (executa a cada 5 segundos)"""
@@ -373,13 +373,13 @@ class RadarAutomaticoAntifa:
                 self._executar_varredura_completa()
                 time.sleep(config.TEMPO_ATUALIZACAO * 60)  # Espera minutos
             except Exception as e:
-                logger.error(f"❌ Erro no loop do radar: {e}")
+                logger.error(f"[Erro] no loop do radar: {e}")
                 time.sleep(60)  # Espera 1 minuto em caso de erro
     
     def _executar_varredura_completa(self):
         """Executa varredura completa com timer de 5 segundos"""
         logger.info(f"\n{'='*60}")
-        logger.info(f"🛰️🏴 [{horario_brasilia()}] INICIANDO VARREDURA COMPLETA")
+        logger.info(f"[Radar] [{horario_brasilia()}] INICIANDO VARREDURA COMPLETA")
         logger.info(f"{'='*60}")
         
         # Ordena fontes por prioridade (primeiro as nacionais)
@@ -395,9 +395,9 @@ class RadarAutomaticoAntifa:
         
         for fonte in fontes_ordenadas:
             processadas += 1
-            logger.info(f"\n📡 [{processadas}/{total_fontes}] Processando: {fonte['nome']} ({fonte['pais']})")
+            logger.info(f"\n[Radar] [{processadas}/{total_fontes}] Processando: {fonte['nome']} ({fonte['pais']})")
             
-            # ⏱️ TIMER DE 5 SEGUNDOS ENTRE CADA FONTE
+            # TIMER DE 5 SEGUNDOS ENTRE CADA FONTE
             time.sleep(config.DELAY_ENTRE_REQUISICOES)
             
             # Seleciona palavras-chave para esta fonte
@@ -417,11 +417,11 @@ class RadarAutomaticoAntifa:
                 self.estatisticas['idiomas'][fonte['idioma']] += 1
                 self.estatisticas['fontes_por_prioridade'][fonte['prioridade']] += 1
         
-        # Atualiza estatísticas
+        # Atualiza estatisticas
         self.estatisticas['total_buscas'] += 1
         self.estatisticas['noticias_encontradas'] += len(todas_noticias_novas)
         
-        # Salva notícias
+        # Salva noticias
         if todas_noticias_novas:
             todas_noticias = todas_noticias_novas + noticias_antigas
             todas_noticias.sort(key=lambda x: x.data, reverse=True)
@@ -434,24 +434,24 @@ class RadarAutomaticoAntifa:
             self._salvar_noticias(todas_noticias)
             
             logger.info(f"\n{'='*60}")
-            logger.info(f"✅ VARREDURA CONCLUÍDA - {horario_brasilia()}")
-            logger.info(f"📊 RESULTADOS:")
-            logger.info(f"  📡 Fontes ativas: {fontes_ativas_temp}")
-            logger.info(f"  📰 Notícias novas: {len(todas_noticias_novas)}")
-            logger.info(f"  🌍 Continentes: {len(self.estatisticas['continentes'])}")
-            logger.info(f"  🏳️ Países: {len(self.estatisticas['paises'])}")
-            logger.info(f"  🇧🇷 Fontes nacionais: {self.estatisticas['fontes_por_prioridade'][1]}")
-            logger.info(f"  🌎 Fontes internacionais: {self.estatisticas['fontes_por_prioridade'][2] + self.estatisticas['fontes_por_prioridade'][3]}")
+            logger.info(f"[OK] VARREDURA CONCLUIDA - {horario_brasilia()}")
+            logger.info(f"[Dados] RESULTADOS:")
+            logger.info(f"  [Radar] Fontes ativas: {fontes_ativas_temp}")
+            logger.info(f"  [Noticias] Novas: {len(todas_noticias_novas)}")
+            logger.info(f"  [Continentes] {len(self.estatisticas['continentes'])}")
+            logger.info(f"  [Paises] {len(self.estatisticas['paises'])}")
+            logger.info(f"  [Brasil] Nacionais: {self.estatisticas['fontes_por_prioridade'][1]}")
+            logger.info(f"  [Mundo] Internacionais: {self.estatisticas['fontes_por_prioridade'][2] + self.estatisticas['fontes_por_prioridade'][3]}")
             logger.info(f"{'='*60}")
         else:
-            logger.info("ℹ️ Nenhuma notícia nova encontrada nesta varredura")
+            logger.info("[Info] Nenhuma noticia nova encontrada nesta varredura")
     
     def _processar_fonte(self, fonte, palavras, links_antigos):
         """Processa uma fonte individual com timer de 5 segundos"""
         noticias = []
         
         try:
-            # Tenta com proxy se necessário
+            # Tenta com proxy se necessario
             proxy = None
             for tentativa in range(config.MAX_TENTATIVAS):
                 try:
@@ -469,12 +469,12 @@ class RadarAutomaticoAntifa:
                     if response.status_code == 200:
                         break
                     elif tentativa == config.MAX_TENTATIVAS - 1:
-                        logger.debug(f"❌ {fonte['nome']} - status {response.status_code}")
+                        logger.debug(f"[Falha] {fonte['nome']} - status {response.status_code}")
                         return []
                         
                 except Exception as e:
                     if tentativa == config.MAX_TENTATIVAS - 1:
-                        logger.debug(f"❌ {fonte['nome']} - erro: {str(e)[:30]}")
+                        logger.debug(f"[Falha] {fonte['nome']} - erro: {str(e)[:30]}")
                         return []
             
             # Parse do feed
@@ -490,9 +490,9 @@ class RadarAutomaticoAntifa:
                 
                 noticia = self._criar_noticia(fonte, entrada)
                 if noticia:
-                    # Verifica relevância
+                    # Verifica relevancia
                     relevancia = self._calcular_relevancia(noticia, palavras)
-                    if relevancia > 0.2:  # 20% de relevância mínima
+                    if relevancia > 0.2:  # 20% de relevancia minima
                         noticias.append(noticia)
                         
                         # Atualiza palavras-chave
@@ -500,15 +500,15 @@ class RadarAutomaticoAntifa:
                             if palavra.lower() in noticia.titulo.lower() or palavra.lower() in noticia.resumo.lower():
                                 self.estatisticas['palavras_mais_usadas'][palavra] += 1
             
-            logger.info(f"  ✅ {fonte['nome']} - {len(noticias)} notícias")
+            logger.info(f"  [OK] {fonte['nome']} - {len(noticias)} noticias")
             
         except Exception as e:
-            logger.debug(f"❌ Erro em {fonte['nome']}: {str(e)[:30]}")
+            logger.debug(f"[Falha] Erro em {fonte['nome']}: {str(e)[:30]}")
         
         return noticias
     
     def _criar_noticia(self, fonte, entrada):
-        """Cria objeto de notícia"""
+        """Cria objeto de noticia"""
         try:
             # Extrai resumo
             resumo = ""
@@ -576,18 +576,18 @@ class RadarAutomaticoAntifa:
             )
             
         except Exception as e:
-            logger.debug(f"Erro ao criar notícia: {e}")
+            logger.debug(f"Erro ao criar noticia: {e}")
             return None
     
     def _selecionar_palavras_para_idioma(self, idioma):
-        """Seleciona palavras-chave para um idioma específico"""
+        """Seleciona palavras-chave para um idioma especifico"""
         if idioma in PALAVRAS_CHAVE:
             palavras = PALAVRAS_CHAVE[idioma]
             return random.sample(palavras, min(config.MAX_PALAVRAS_POR_BUSCA, len(palavras)))
         return []
     
     def _selecionar_palavras_aleatorias(self):
-        """Seleciona palavras-chave aleatórias de diferentes idiomas"""
+        """Seleciona palavras-chave aleatorias de diferentes idiomas"""
         palavras_selecionadas = []
         idiomas = list(PALAVRAS_CHAVE.keys())
         
@@ -599,7 +599,7 @@ class RadarAutomaticoAntifa:
         return list(set(palavras_selecionadas))
     
     def _calcular_relevancia(self, noticia, palavras):
-        """Calcula a relevância da notícia baseada nas palavras-chave"""
+        """Calcula a relevancia da noticia baseada nas palavras-chave"""
         if not palavras:
             return 0.5
         
@@ -613,7 +613,7 @@ class RadarAutomaticoAntifa:
         return palavras_encontradas / len(palavras) if palavras else 0
     
     def _carregar_noticias(self):
-        """Carrega notícias do arquivo"""
+        """Carrega noticias do arquivo"""
         if os.path.exists(config.ARQUIVO_NOTICIAS):
             try:
                 with open(config.ARQUIVO_NOTICIAS, 'r', encoding='utf-8') as f:
@@ -632,7 +632,7 @@ class RadarAutomaticoAntifa:
         return []
     
     def _salvar_noticias(self, noticias):
-        """Salva notícias no arquivo"""
+        """Salva noticias no arquivo"""
         try:
             noticias_dict = [asdict(n) for n in noticias]
             
@@ -652,61 +652,68 @@ class RadarAutomaticoAntifa:
                     'horario_brasilia': horario_brasilia(),
                 }, f, ensure_ascii=False, indent=2, default=str)
             
-            logger.info(f"✅🏴 Notícias salvas: {len(noticias)}")
+            logger.info(f"[OK] Noticias salvas: {len(noticias)}")
             return True
         except Exception as e:
-            logger.error(f"❌ Erro ao salvar: {e}")
+            logger.error(f"[Erro] ao salvar: {e}")
             return False
 
 # ============================================
-# INICIALIZAÇÃO DO RADAR
+# INICIALIZACAO DO RADAR
 # ============================================
 
 radar = RadarAutomaticoAntifa()
 
 # ============================================
-# FUNÇÃO PARA PEGAR BANDEIRAS
+# FUNCAO PARA PEGAR BANDEIRAS (TEXTO PURO)
 # ============================================
 
-def get_bandeira(pais):
-    """Retorna a bandeira emoji para o país"""
-    bandeiras = {
-        'Brasil': '🇧🇷',
-        'Portugal': '🇵🇹',
-        'Argentina': '🇦🇷',
-        'México': '🇲🇽',
-        'Venezuela': '🇻🇪',
-        'USA': '🇺🇸',
-        'UK': '🇬🇧',
-        'Alemanha': '🇩🇪',
-        'França': '🇫🇷',
-        'Espanha': '🇪🇸',
-        'Itália': '🇮🇹',
-        'Canadá': '🇨🇦',
-        'Austrália': '🇦🇺',
-        'Japão': '🇯🇵',
-        'China': '🇨🇳',
-        'Índia': '🇮🇳',
-        'Israel': '🇮🇱',
-        'Qatar': '🇶🇦',
-        'Global': '🌍',
-        'África do Sul': '🇿🇦',
-        'Quênia': '🇰🇪',
-        'Congo': '🇨🇩',
-        'Bélgica': '🇧🇪',
-        'Irã': '🇮🇷',
-        'Emirados': '🇦🇪',
-        'Singapura': '🇸🇬',
-        'Coreia do Sul': '🇰🇷',
-        'Hong Kong': '🇭🇰',
-        'Nova Zelândia': '🇳🇿',
+def get_bandeira_texto(pais):
+    """Retorna texto representando o pais (sem emojis)"""
+    bandeiras_texto = {
+        'Brasil': '[BR]',
+        'Portugal': '[PT]',
+        'Argentina': '[AR]',
+        'Mexico': '[MX]',
+        'Venezuela': '[VE]',
+        'USA': '[US]',
+        'UK': '[UK]',
+        'Alemanha': '[DE]',
+        'Franca': '[FR]',
+        'Espanha': '[ES]',
+        'Italia': '[IT]',
+        'Canada': '[CA]',
+        'Australia': '[AU]',
+        'Japao': '[JP]',
+        'China': '[CN]',
+        'India': '[IN]',
+        'Israel': '[IL]',
+        'Qatar': '[QA]',
+        'Global': '[GL]',
+        'Africa do Sul': '[ZA]',
+        'Quenia': '[KE]',
+        'Congo': '[CG]',
+        'Belgica': '[BE]',
+        'Ira': '[IR]',
+        'Emirados': '[AE]',
+        'Singapura': '[SG]',
+        'Coreia do Sul': '[KR]',
+        'Hong Kong': '[HK]',
+        'Nova Zelandia': '[NZ]',
+        'America do Sul': '[SA]',
+        'America do Norte': '[NA]',
+        'Europa': '[EU]',
+        'Asia': '[AS]',
+        'Africa': '[AF]',
+        'Oriente Medio': '[ME]',
+        'Oceania': '[OC]',
     }
-    return bandeiras.get(pais, '🏴')
+    return bandeiras_texto.get(pais, '[??]')
 
 app = Flask(__name__)
 
 # ============================================
-# PÁGINA PRINCIPAL - DESIGN SOFISTICADO
+# PAGINA PRINCIPAL - DESIGN SOFISTICADO (SEM EMOJIS)
 # ============================================
 
 @app.route('/')
@@ -720,7 +727,7 @@ def home():
     internacionais = [n for n in noticias if n.pais != 'Brasil']
     destaques = [n for n in noticias if n.destaque][:8]
     
-    # Estatísticas
+    # Estatisticas
     continentes = defaultdict(int)
     for n in noticias:
         continentes[n.continente] += 1
@@ -731,39 +738,39 @@ def home():
     # HTML dos destaques
     destaques_html = ''
     for n in destaques:
-        bandeira = get_bandeira(n.pais)
+        bandeira = get_bandeira_texto(n.pais)
         destaques_html += f'''
         <div class="destaque-card">
-            <span class="destaque-tag">⭐ DESTAQUE</span>
+            <span class="destaque-tag">[Destaque]</span>
             <div class="destaque-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="confiabilidade">{'★' * n.confiabilidade}{'☆' * (10 - n.confiabilidade)}</span>
+                <span class="confiabilidade">{"*" * n.confiabilidade}{"+" * (10 - n.confiabilidade)}</span>
             </div>
             <h3>{n.titulo}</h3>
             <p class="destaque-resumo">{n.resumo[:150]}...</p>
             <div class="destaque-footer">
-                <span class="data">🕒 {n.data[:16]}</span>
-                <a href="{n.link}" target="_blank" class="ler-mais">Ler artigo completo →</a>
+                <span class="data">[Hora] {n.data[:16]}</span>
+                <a href="{n.link}" target="_blank" class="ler-mais">Ler artigo completo ></a>
             </div>
-            <div class="horario-brasilia">🇧🇷 {n.horario_brasilia if hasattr(n, 'horario_brasilia') else horario_brasilia()}</div>
+            <div class="horario-brasilia">[BR] {n.horario_brasilia if hasattr(n, 'horario_brasilia') else horario_brasilia()}</div>
         </div>
         '''
     
-    # HTML Geopolítica
+    # HTML Geopolitica
     geo_html = ''
     for n in geopolitica[:12]:
-        bandeira = get_bandeira(n.pais)
+        bandeira = get_bandeira_texto(n.pais)
         geo_html += f'''
         <article class="noticia">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">{n.pais}</span>
+                <span class="pais">[{n.pais}]</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
-                <span class="data">🕒 {n.data[:10]}</span>
-                <a href="{n.link}" target="_blank" class="ler-link">🔗</a>
+                <span class="data">[Hora] {n.data[:10]}</span>
+                <a href="{n.link}" target="_blank" class="ler-link">[Link]</a>
             </div>
         </article>
         '''
@@ -771,18 +778,18 @@ def home():
     # HTML Antifa
     antifa_html = ''
     for n in antifa[:12]:
-        bandeira = get_bandeira(n.pais)
+        bandeira = get_bandeira_texto(n.pais)
         antifa_html += f'''
         <article class="noticia antifa">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">{n.pais}</span>
+                <span class="pais">[{n.pais}]</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
-                <span class="data">🕒 {n.data[:10]}</span>
-                <a href="{n.link}" target="_blank" class="ler-link">🔗</a>
+                <span class="data">[Hora] {n.data[:10]}</span>
+                <a href="{n.link}" target="_blank" class="ler-link">[Link]</a>
             </div>
         </article>
         '''
@@ -790,18 +797,18 @@ def home():
     # HTML Nacionais
     nacional_html = ''
     for n in nacionais[:12]:
-        bandeira = get_bandeira(n.pais)
+        bandeira = get_bandeira_texto(n.pais)
         nacional_html += f'''
         <article class="noticia nacional">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">{n.pais}</span>
+                <span class="pais">[{n.pais}]</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
-                <span class="data">🕒 {n.data[:10]}</span>
-                <a href="{n.link}" target="_blank" class="ler-link">🔗</a>
+                <span class="data">[Hora] {n.data[:10]}</span>
+                <a href="{n.link}" target="_blank" class="ler-link">[Link]</a>
             </div>
         </article>
         '''
@@ -809,18 +816,18 @@ def home():
     # HTML Internacionais
     internacional_html = ''
     for n in internacionais[:12]:
-        bandeira = get_bandeira(n.pais)
+        bandeira = get_bandeira_texto(n.pais)
         internacional_html += f'''
         <article class="noticia internacional">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">{n.pais}</span>
+                <span class="pais">[{n.pais}]</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
-                <span class="data">🕒 {n.data[:10]}</span>
-                <a href="{n.link}" target="_blank" class="ler-link">🔗</a>
+                <span class="data">[Hora] {n.data[:10]}</span>
+                <a href="{n.link}" target="_blank" class="ler-link">[Link]</a>
             </div>
         </article>
         '''
@@ -828,7 +835,7 @@ def home():
     # HTML dos badges de continentes
     continentes_html = ''
     for cont, qtd in continentes.items():
-        continentes_html += f'<span class="badge-continente">{cont}: {qtd}</span>'
+        continentes_html += f'<span class="badge-continente">[{cont}]: {qtd}</span>'
     
     # HTML das palavras mais usadas
     palavras_html = ''
@@ -841,10 +848,10 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="Informação antifascista - Nacional e Internacional - Horário de Brasília">
-        <meta name="keywords" content="antifa, antifascista, notícias, brasil, mundo, geopolítica">
+        <meta name="description" content="Informacao antifascista - Nacional e Internacional - Horario de Brasilia">
+        <meta name="keywords" content="antifa, antifascista, noticias, brasil, mundo, geopolitica">
         <meta name="author" content="SHARP - FRONT 16 RJ">
-        <title>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</title>
+        <title>[Vermelho][Preto] SHARP - FRONT 16 RJ [Preto][Vermelho]</title>
         <style>
             /* RESET E ESTILOS GLOBAIS SOFISTICADOS */
             * {{
@@ -1069,7 +1076,7 @@ def home():
                 cursor: default;
             }}
             
-            /* SEÇÕES PRINCIPAIS */
+            /* SECOES PRINCIPAIS */
             .secao {{
                 max-width: 1400px;
                 margin: 60px auto;
@@ -1119,7 +1126,7 @@ def home():
             }}
             
             .destaque-card::before {{
-                content: '🏴';
+                content: '✊';
                 position: absolute;
                 bottom: -30px;
                 right: -30px;
@@ -1129,7 +1136,7 @@ def home():
             }}
             
             .destaque-card::after {{
-                content: '🔴';
+                content: '⚡';
                 position: absolute;
                 top: -30px;
                 left: -30px;
@@ -1383,7 +1390,7 @@ def home():
             }}
             
             .agradecimento::before {{
-                content: '✊🏴';
+                content: '✊';
                 position: absolute;
                 bottom: -40px;
                 left: -40px;
@@ -1392,7 +1399,7 @@ def home():
             }}
             
             .agradecimento::after {{
-                content: '🔴';
+                content: '⚡';
                 position: absolute;
                 top: -40px;
                 right: -40px;
@@ -1529,7 +1536,7 @@ def home():
                 }}
             }}
             
-            /* UTILITÁRIOS */
+            /* UTILITARIOS */
             .pulse {{
                 animation: pulse 2s infinite;
             }}
@@ -1544,33 +1551,33 @@ def home():
     <body>
         <div class="header">
             <div class="bolas-container">
-                <div class="bola-vermelha" title="Luta e Resistência"></div>
+                <div class="bola-vermelha" title="Luta e Resistencia"></div>
                 <div class="bola-preta" title="Antifascismo"></div>
             </div>
             
             <div class="horario-brasilia-header">
-                🇧🇷 {horario_brasilia()}
+                [BR] {horario_brasilia()}
             </div>
             
-            <h1>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</h1>
-            <p class="subtitulo">📰 INFORMAÇÃO ANTIFASCISTA • NACIONAL & INTERNACIONAL</p>
+            <h1>[Vermelho][Preto] SHARP - FRONT 16 RJ [Preto][Vermelho]</h1>
+            <p class="subtitulo">[Info] INFORMACAO ANTIFASCISTA - NACIONAL E INTERNACIONAL</p>
             
             <div class="stats-supremas">
-                <span class="stat-supremo">📰 {len(noticias)} notícias</span>
-                <span class="stat-supremo">🌍 {len(radar.estatisticas['continentes'])} continentes</span>
-                <span class="stat-supremo">🏳️ {len(radar.estatisticas['paises'])} países</span>
-                <span class="stat-supremo">📡 {radar.estatisticas['fontes_funcionando']} fontes</span>
-                <span class="stat-supremo">🔴 {len(antifa)} antifa</span>
-                <span class="stat-supremo">⚔️ {len(geopolitica)} geopolitica</span>
-                <span class="stat-supremo">🇧🇷 {len(nacionais)} nacional</span>
-                <span class="stat-supremo">🌎 {len(internacionais)} internacional</span>
+                <span class="stat-supremo">[Noticias] {len(noticias)}</span>
+                <span class="stat-supremo">[Continentes] {len(radar.estatisticas['continentes'])}</span>
+                <span class="stat-supremo">[Paises] {len(radar.estatisticas['paises'])}</span>
+                <span class="stat-supremo">[Fontes] {radar.estatisticas['fontes_funcionando']}</span>
+                <span class="stat-supremo">[Antifa] {len(antifa)}</span>
+                <span class="stat-supremo">[Geopolitica] {len(geopolitica)}</span>
+                <span class="stat-supremo">[Brasil] {len(nacionais)}</span>
+                <span class="stat-supremo">[Mundo] {len(internacionais)}</span>
             </div>
             
             <div class="radar-info">
-                <span class="radar-badge">🛰️ RADAR ATIVO: {radar.estatisticas['fontes_funcionando']} fontes</span>
-                <span class="radar-badge">🔤 IDIOMAS: {len(radar.estatisticas['idiomas'])}</span>
-                <span class="radar-badge">⚡ ÚLTIMA BUSCA: {hora_brasilia()}</span>
-                <span class="radar-badge">⏱️ TIMER: 5s entre fontes</span>
+                <span class="radar-badge">[Radar] Ativo: {radar.estatisticas['fontes_funcionando']} fontes</span>
+                <span class="radar-badge">[Idiomas] {len(radar.estatisticas['idiomas'])}</span>
+                <span class="radar-badge">[Ultima] {hora_brasilia()}</span>
+                <span class="radar-badge">[Timer] 5s entre fontes</span>
             </div>
             
             <div class="badge-container">
@@ -1585,74 +1592,74 @@ def home():
         <!-- DESTAQUES -->
         <div class="secao">
             <div class="secao-titulo">
-                ⭐ DESTAQUES DO RADAR ANTIFA
+                [Destaques] DO RADAR ANTIFA
                 <span class="badge">{len(destaques)} destaques</span>
             </div>
             
-{destaques_html if destaques_html else f'''
-    <div class="mensagem-vazia">
-        <div class="loading-animation"></div>
-        <p>RADAR em operação... buscando informações antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
-        <p style="font-size: 0.9rem; margin-top: 20px;">⏱️ Aguarde 5 segundos entre cada fonte para máxima eficiência</p>
-    </div>
-'''}
+            {destaques_html if destaques_html else f'''
+            <div class="mensagem-vazia">
+                <div class="loading-animation"></div>
+                <p>[Radar] em operacao... buscando informacoes antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
+                <p style="font-size: 0.9rem; margin-top: 20px;">[Timer] Aguarde 5 segundos entre cada fonte para maxima eficiencia</p>
+            </div>
+            '''}
         </div>
         
         <!-- GRID PRINCIPAL DE 4 COLUNAS -->
         <div class="grid-principal">
-            <!-- COLUNA GEOPOLÍTICA -->
+            <!-- COLUNA GEOPOLITICA -->
             <div class="coluna-especial">
                 <div class="coluna-titulo">
-                    ⚔️ GEOPOLÍTICA & GUERRA
+                    [Geopolitica] GUERRA
                     <span class="badge">{len(geopolitica)}</span>
                 </div>
-                {geo_html if geo_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>🛰️ Escaneando conflitos globais...</p></div>'}
+                {geo_html if geo_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>[Radar] Escaneando conflitos globais...</p></div>'}
             </div>
             
             <!-- COLUNA ANTIFA -->
             <div class="coluna-especial">
                 <div class="coluna-titulo">
-                    🏴 MOVIMENTOS ANTIFASCISTAS
+                    [Antifa] MOVIMENTOS SOCIAIS
                     <span class="badge">{len(antifa)}</span>
                 </div>
-                {antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>🛰️ Buscando movimentos sociais...</p></div>'}
+                {antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>[Radar] Buscando movimentos sociais...</p></div>'}
             </div>
             
             <!-- COLUNA NACIONAL -->
             <div class="coluna-especial">
                 <div class="coluna-titulo">
-                    🇧🇷 BRASIL (NACIONAL)
+                    [Brasil] NACIONAL
                     <span class="badge">{len(nacionais)}</span>
                 </div>
-                {nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>🛰️ Buscando notícias nacionais...</p></div>'}
+                {nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>[Radar] Buscando noticias nacionais...</p></div>'}
             </div>
             
             <!-- COLUNA INTERNACIONAL -->
             <div class="coluna-especial">
                 <div class="coluna-titulo">
-                    🌍 INTERNACIONAL
+                    [Mundo] INTERNACIONAL
                     <span class="badge">{len(internacionais)}</span>
                 </div>
-                {internacional_html if internacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>🛰️ Buscando notícias internacionais...</p></div>'}
+                {internacional_html if internacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>[Radar] Buscando noticias internacionais...</p></div>'}
             </div>
         </div>
         
         <!-- AGRADECIMENTO ANTIFA -->
         <div class="agradecimento">
-            <p>"A informação é nossa arma mais poderosa contra o fascismo. Agradecemos a todos os antifascistas, anarquistas, comunistas e lutadores sociais que constroem um mundo sem opressão. A luta continua!"</p>
-            <div class="assinatura">✊🏴 SHARP - FRONT 16 RJ 🏴🔴</div>
-            <p style="margin-top: 30px; color: #ff0000; font-size: 1.1rem;">"Enquanto houver fascismo, haverá antifascismo."</p>
-            <p style="margin-top: 20px; color: #444; font-size: 0.8rem;">🇧🇷 Horário de Brasília: {horario_brasilia()}</p>
+            <p>"A informacao e nossa arma mais poderosa contra o fascismo. Agradecemos a todos os antifascistas, anarquistas, comunistas e lutadores sociais que constroem um mundo sem opressao. A luta continua!"</p>
+            <div class="assinatura">✊ [Preto][Vermelho] SHARP - FRONT 16 RJ [Vermelho][Preto]</div>
+            <p style="margin-top: 30px; color: #ff0000; font-size: 1.1rem;">"Enquanto houver fascismo, havera antifascismo."</p>
+            <p style="margin-top: 20px; color: #444; font-size: 0.8rem;">[BR] Horario de Brasilia: {horario_brasilia()}</p>
         </div>
         
         <!-- FOOTER -->
         <div class="footer">
             <div class="footer-stats">
-                <span>🛰️ Radar a cada {config.TEMPO_ATUALIZACAO} minutos</span>
-                <span>⏱️ Timer: 5 segundos entre fontes</span>
-                <span>🔗 Links originais</span>
-                <span>⚡ {len(noticias)} notícias no acervo</span>
-                <span>🏴 {radar.estatisticas['fontes_funcionando']} fontes ativas</span>
+                <span>[Radar] a cada {config.TEMPO_ATUALIZACAO} minutos</span>
+                <span>[Timer] 5 segundos entre fontes</span>
+                <span>[Links] originais</span>
+                <span>[Acervo] {len(noticias)} noticias</span>
+                <span>[Fontes] {radar.estatisticas['fontes_funcionando']} ativas</span>
             </div>
             
             <div class="footer-links">
@@ -1661,17 +1668,17 @@ def home():
                 <a href="#">Contato</a>
                 <a href="#">Privacidade</a>
                 <a href="#">Manifesto</a>
-                <a href="#">🇧🇷 Horário Brasília</a>
+                <a href="#">[BR] Horario Brasilia</a>
             </div>
             
             <div class="footer-copyright">
-                🔴🏴 SHARP - FRONT 16 RJ • Informação Antifascista • Nacional & Internacional
+                [Vermelho][Preto] SHARP - FRONT 16 RJ - Informacao Antifascista - Nacional & Internacional
             </div>
             <div class="footer-copyright" style="color: #555;">
-                Todos os links são das fontes originais • Conteúdo sob responsabilidade de cada veículo
+                Todos os links sao das fontes originais - Conteudo sob responsabilidade de cada veiculo
             </div>
             <div class="footer-versao">
-                v10.0 • RADAR SUPREMO ANTIFA • Timer 5s • Horário Brasília • {len(FONTES_CONFIAVEIS)} fontes • {sum(len(p) for p in PALAVRAS_CHAVE.values())} palavras-chave
+                v10.0 - RADAR SUPREMO ANTIFA - Timer 5s - Horario Brasilia - {len(FONTES_CONFIAVEIS)} fontes - {sum(len(p) for p in PALAVRAS_CHAVE.values())} palavras-chave
             </div>
         </div>
     </body>
@@ -1679,7 +1686,7 @@ def home():
     '''
 
 # ============================================
-# API DE ESTATÍSTICAS
+# API DE ESTATISTICAS
 # ============================================
 
 @app.route('/api/stats')
@@ -1707,7 +1714,7 @@ def api_stats():
     })
 
 # ============================================
-# ROTA PARA DIAGNÓSTICO (OPCIONAL)
+# ROTA PARA DIAGNOSTICO (OPCIONAL)
 # ============================================
 
 @app.route('/diagnostico')
@@ -1716,7 +1723,7 @@ def diagnostico():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>🔴🏴 Diagnóstico do Radar</title>
+        <title>[Vermelho][Preto] Diagnostico do Radar</title>
         <style>
             body {{ background: black; color: white; font-family: monospace; padding: 20px; }}
             h1 {{ color: red; }}
@@ -1724,44 +1731,44 @@ def diagnostico():
         </style>
     </head>
     <body>
-        <h1>🔴🏴 RADAR SUPREMO - DIAGNÓSTICO</h1>
-        <div class="info">⏱️ Horário Brasília: {horario_brasilia()}</div>
-        <div class="info">⏱️ Timer entre fontes: {config.DELAY_ENTRE_REQUISICOES} segundos</div>
-        <div class="info">📡 Fontes configuradas: {len(FONTES_CONFIAVEIS)}</div>
-        <div class="info">🔤 Palavras-chave: {sum(len(p) for p in PALAVRAS_CHAVE.values())}</div>
-        <div class="info">🔴 Fontes nacionais (prioridade 1): {radar.estatisticas['fontes_por_prioridade'][1]}</div>
-        <div class="info">🌎 Fontes internacionais (prioridade 2-3): {radar.estatisticas['fontes_por_prioridade'][2] + radar.estatisticas['fontes_por_prioridade'][3]}</div>
-        <div class="info">📊 Estatísticas do radar: {json.dumps(dict(radar.estatisticas['fontes_por_prioridade']), indent=2)}</div>
+        <h1>[Vermelho][Preto] RADAR SUPREMO - DIAGNOSTICO</h1>
+        <div class="info">[Timer] Horario Brasilia: {horario_brasilia()}</div>
+        <div class="info">[Timer] Timer entre fontes: {config.DELAY_ENTRE_REQUISICOES} segundos</div>
+        <div class="info">[Fontes] Configuradas: {len(FONTES_CONFIAVEIS)}</div>
+        <div class="info">[Palavras] Palavras-chave: {sum(len(p) for p in PALAVRAS_CHAVE.values())}</div>
+        <div class="info">[Brasil] Nacionais (prioridade 1): {radar.estatisticas['fontes_por_prioridade'][1]}</div>
+        <div class="info">[Mundo] Internacionais (prioridade 2-3): {radar.estatisticas['fontes_por_prioridade'][2] + radar.estatisticas['fontes_por_prioridade'][3]}</div>
+        <div class="info">[Dados] Estatisticas do radar: {json.dumps(dict(radar.estatisticas['fontes_por_prioridade']), indent=2)}</div>
     </body>
     </html>
     '''
 
 # ============================================
-# INICIALIZAÇÃO SUPREMA
+# INICIALIZACAO SUPREMA
 # ============================================
 
 def inicializar_supremo():
-    """Inicializa o sistema supremo com radar automático"""
+    """Inicializa o sistema supremo com radar automatico"""
     logger.info("="*70)
-    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR SUPREMO ANTIFA v10.0 FINAL")
+    logger.info("[Vermelho][Preto] SHARP - FRONT 16 RJ - RADAR SUPREMO ANTIFA v10.0 FINAL")
     logger.info("="*70)
     
     # Carrega cache
     cache = {}
     noticias = radar._carregar_noticias()
-    logger.info(f"📊 Acervo inicial: {len(noticias)} notícias")
-    logger.info(f"🌍 Fontes configuradas: {len(FONTES_CONFIAVEIS)}")
-    logger.info(f"🔤 Palavras-chave: {sum(len(p) for p in PALAVRAS_CHAVE.values())} em {len(PALAVRAS_CHAVE)} idiomas")
-    logger.info(f"⏱️ Timer entre fontes: {config.DELAY_ENTRE_REQUISICOES} segundos")
-    logger.info(f"🇧🇷 Horário de Brasília: {horario_brasilia()}")
+    logger.info(f"[Dados] Acervo inicial: {len(noticias)} noticias")
+    logger.info(f"[Fontes] Configuradas: {len(FONTES_CONFIAVEIS)}")
+    logger.info(f"[Palavras] Palavras-chave: {sum(len(p) for p in PALAVRAS_CHAVE.values())} em {len(PALAVRAS_CHAVE)} idiomas")
+    logger.info(f"[Timer] Timer entre fontes: {config.DELAY_ENTRE_REQUISICOES} segundos")
+    logger.info(f"[BR] Horario de Brasilia: {horario_brasilia()}")
     
-    # INICIA O RADAR AUTOMATICAMENTE (SEM BOTÃO)
+    # INICIA O RADAR AUTOMATICAMENTE (SEM BOTAO)
     radar.iniciar_radar_automatico()
-    logger.info("✅🏴 RADAR SUPREMO ATIVADO AUTOMATICAMENTE - 5 SEGUNDOS ENTRE FONTES")
+    logger.info("[OK] RADAR SUPREMO ATIVADO AUTOMATICAMENTE - 5 SEGUNDOS ENTRE FONTES")
     logger.info("="*70)
 
 inicializar_supremo()
 
 # ============================================
-# FIM - NÃO COLOQUE app.run() AQUI!
+# FIM - NAO COLOQUE app.run() AQUI!
 # ============================================
