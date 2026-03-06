@@ -1596,13 +1596,13 @@ def home():
                 <span class="badge">{len(destaques)} destaques</span>
             </div>
             
-            {destaques_html if destaques_html else f'''
+            {destaques_html if destaques_html else '''
     <div class="mensagem-vazia">
         <div class="loading-animation"></div>
-        <p>[Radar] em operacao... buscando informacoes antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
+        <p>[Radar] em operacao... buscando informacoes antifascistas em {} fontes globais</p>
         <p style="font-size: 0.9rem; margin-top: 20px;">[Timer] Aguarde 5 segundos entre cada fonte para maxima eficiencia</p>
     </div>
-'''}
+'''.format(len(FONTES_CONFIAVEIS))}
         </div>
         
         <!-- GRID PRINCIPAL DE 4 COLUNAS -->
