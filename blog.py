@@ -1592,7 +1592,7 @@ def home():
 {destaques_html if destaques_html else f'''
     <div class="mensagem-vazia">
         <div class="loading-animation"></div>
-        <p>🛸 Radar em operação... buscando informações antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
+        <p>RADAR em operação... buscando informações antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
         <p style="font-size: 0.9rem; margin-top: 20px;">⏱️ Aguarde 5 segundos entre cada fonte para máxima eficiência</p>
     </div>
 '''}
