@@ -1596,16 +1596,34 @@ def home():
                 <span class="badge">{len(destaques)} destaques</span>
             </div>
             
-            if destaques_html:
-    destaques_final = destaques_html
+            # Determina o conteúdo dos destaques
+if destaques_html:
+    destaques_conteudo = destaques_html
 else:
-    destaques_final = f'''
+    destaques_conteudo = f'''
     <div class="mensagem-vazia">
         <div class="loading-animation"></div>
         <p>[Radar] em operacao... buscando informacoes antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
         <p style="font-size: 0.9rem; margin-top: 20px;">[Timer] Aguarde 5 segundos entre cada fonte para maxima eficiencia</p>
     </div>
     '''
+
+# Depois, na hora de montar o HTML final com f-string, você insere a variável:
+    # Processa os destaques
+    if destaques_html:
+        destaques_conteudo = destaques_html
+    else:
+        destaques_conteudo = f'''
+        <div class="mensagem-vazia">
+            <div class="loading-animation"></div>
+            <p>[Radar] em operacao... buscando informacoes antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
+            <p style="font-size: 0.9rem; margin-top: 20px;">[Timer] Aguarde 5 segundos entre cada fonte para maxima eficiencia</p>
+        </div>
+        '''return f'''
+... (todo o resto do HTML) ...
+{destaques_conteudo}
+... (resto do HTML) ...
+'''
         
         <!-- GRID PRINCIPAL DE 4 COLUNAS -->
         <div class="grid-principal">
