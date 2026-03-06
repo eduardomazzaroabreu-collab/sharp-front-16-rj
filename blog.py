@@ -1589,7 +1589,7 @@ def home():
                 <span class="badge">{len(destaques)} destaques</span>
             </div>
             
-            {destaques_html if destaques_html else f'''
+            {destaques_html if destaques_html else f'''}
             <div class="mensagem-vazia">
                 <div class="loading-animation"></div>
              <p>🛸 Radar em operação... buscando informações antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
