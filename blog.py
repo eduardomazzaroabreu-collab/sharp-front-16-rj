@@ -3,8 +3,8 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    🔴🏴 SHARP - FRONT 16 RJ 🏴🔴                          ║
-║                 SISTEMA SUPREMO ANTIFA - VERSÃO 9.0                          ║
-║         RADAR INFORMACIONAL ANTIFASCISTA GLOBAL MULTILÍNGUE                  ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 10.0 - FINAL                    ║
+║         RADAR AUTOMÁTICO COM TIMER DE 5 SEGUNDOS - HORÁRIO DE BRASÍLIA       ║
 ║              "A informação é nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -60,20 +60,21 @@ class Config:
     ARQUIVO_PALAVRAS = 'palavras_chave.json'
     ARQUIVO_LOG = 'radar_antifa.log'
     
-    # Tempos
+    # Tempos - AJUSTADOS para 5 segundos
     TEMPO_ATUALIZACAO = 10  # minutos
     TIMEOUT_REQUISICAO = 8  # segundos
     TIMEOUT_TOTAL = 30  # segundos
-    DELAY_ENTRE_REQUISICOES = 0.3  # segundos
+    DELAY_ENTRE_REQUISICOES = 5  # ⏱️ 5 SEGUNDOS entre cada site (mais seguro)
+    DELAY_INICIAL = 2  # segundos antes de começar
     
     # Limites
     MAX_NOTICIAS_POR_FONTE = 5
     MAX_NOTICIAS_TOTAL = 3000
-    MAX_TRABALHADORES = 40  # Threads simultâneas
-    MAX_TENTATIVAS = 3
-    MAX_PALAVRAS_POR_BUSCA = 10
+    MAX_TRABALHADORES = 10  # Reduzido para evitar sobrecarga
+    MAX_TENTATIVAS = 2
+    MAX_PALAVRAS_POR_BUSCA = 8
     
-    # Headers para parecer navegador real (evita bloqueios)
+    # Headers para parecer navegador real
     HEADERS = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -83,8 +84,27 @@ class Config:
         'Upgrade-Insecure-Requests': '1',
         'Cache-Control': 'max-age=0',
     }
+    
+    # Horário
+    TIMEZONE = -3  # Brasília (UTC-3)
 
 config = Config()
+
+# ============================================
+# FUNÇÃO PARA HORÁRIO DE BRASÍLIA
+# ============================================
+
+def horario_brasilia():
+    """Retorna o horário atual de Brasília"""
+    utc = datetime.utcnow()
+    brasilia = utc - timedelta(hours=3)  # UTC-3
+    return brasilia.strftime('%d/%m/%Y %H:%M:%S')
+
+def hora_brasilia():
+    """Retorna apenas a hora de Brasília"""
+    utc = datetime.utcnow()
+    brasilia = utc - timedelta(hours=3)
+    return brasilia.strftime('%H:%M')
 
 # ============================================
 # LOGGING PROFISSIONAL
@@ -101,7 +121,7 @@ logging.basicConfig(
 logger = logging.getLogger('ANTIFA-RADAR')
 
 # ============================================
-# SISTEMA DE PROXY INTELIGENTE (EVITA BLOQUEIOS)
+# SISTEMA DE PROXY INTELIGENTE
 # ============================================
 
 class ProxyManagerSupremo:
@@ -109,8 +129,8 @@ class ProxyManagerSupremo:
     
     def __init__(self):
         self.proxies_http = []
-        self.proxies_socks = []
         self.proxies_https = []
+        self.proxies_socks = []
         self.proxy_atual = None
         self.blacklist = set()
         self.cache_proxies = {}
@@ -126,10 +146,6 @@ class ProxyManagerSupremo:
                 'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt',
                 'https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt',
                 'https://raw.githubusercontent.com/roosterkid/openproxylist/main/HTTPS_RAW.txt',
-                'https://raw.githubusercontent.com/themiralay/Proxy-List/master/http.txt',
-                'https://raw.githubusercontent.com/zevtyardt/proxy-list/main/http.txt',
-                'https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt',
-                'https://raw.githubusercontent.com/mmpx12/proxy-list/master/http.txt',
             ]
             
             for url in fontes_proxy:
@@ -200,11 +216,10 @@ PALAVRAS_CHAVE = {
         'polícia', 'repressão', 'violência estatal', 'prisão política',
         'liberdade', 'democracia', 'justiça social', 'reforma agrária',
         'amazônia', 'indígena', 'quilombola', 'meio ambiente', 'sustentabilidade',
-        'governo', 'congresso', 'eleição', 'presidente', 'bolsonaro', 'lula',
-        'economia', 'inflação', 'desemprego', 'fome', 'pobreza',
-        'educação', 'saúde', 'susp', 'forças armadas', 'intervenção',
+        'governo', 'congresso', 'eleição', 'presidente', 'economia',
         'guerra', 'conflito', 'ataque', 'bomba', 'exercito', 'tropas',
         'genocídio', 'ocupação', 'resistência', 'revolução',
+        'bolsonaro', 'lula', 'moro', 'dória', 'boulos',
     ],
     
     # 🇺🇸 INGLÊS (INTERNACIONAL)
@@ -216,14 +231,10 @@ PALAVRAS_CHAVE = {
         'communism', 'socialism', 'anarchism', 'resistance', 'struggle',
         'police', 'repression', 'state violence', 'political prisoner',
         'freedom', 'democracy', 'social justice', 'land reform',
-        'climate', 'environment', 'sustainability', 'amazon rainforest',
-        'government', 'congress', 'election', 'president', 'trump', 'biden',
-        'economy', 'inflation', 'unemployment', 'hunger', 'poverty',
-        'education', 'health', 'police brutality', 'military', 'intervention',
+        'climate', 'environment', 'amazon rainforest', 'palestine', 'israel',
         'war', 'conflict', 'attack', 'bomb', 'army', 'troops',
         'genocide', 'occupation', 'resistance', 'revolution',
-        'palestine', 'israel', 'gaza', 'ukraine', 'russia', 'syria',
-        'climate strike', 'fridays for future', 'extinction rebellion',
+        'trump', 'biden', 'putin', 'zelensky', 'netanyahu',
     ],
     
     # 🇪🇸 ESPANHOL (AMÉRICA LATINA)
@@ -235,47 +246,10 @@ PALAVRAS_CHAVE = {
         'comunismo', 'socialismo', 'anarquismo', 'resistencia', 'lucha',
         'policía', 'represión', 'violencia estatal', 'preso político',
         'libertad', 'democracia', 'justicia social', 'reforma agraria',
-        'amazonía', 'medio ambiente', 'sostenibilidad', 'cambio climático',
-        'gobierno', 'congreso', 'elección', 'presidente', 'petro', 'milei',
-        'economía', 'inflación', 'desempleo', 'hambre', 'pobreza',
-        'educación', 'salud', 'militar', 'intervención',
+        'amazonía', 'medio ambiente', 'cambio climático', 'palestina',
         'guerra', 'conflicto', 'ataque', 'bomba', 'ejército', 'tropas',
         'genocidio', 'ocupación', 'resistencia', 'revolución',
-        'palestina', 'israel', 'gaza', 'ucrania', 'rusia',
-    ],
-    
-    # 🇫🇷 FRANCÊS (ÁFRICA E EUROPA)
-    'fr': [
-        'antifa', 'antifasciste', 'fascisme', 'nazisme', 'néonazi',
-        'mouvement social', 'manifestation', 'grève', 'occupation',
-        'droits humains', 'égalité', 'racisme', 'féminisme', 'lgbtqia+',
-        'travailleur', 'syndicat', 'sans terre', 'autochtone',
-        'communisme', 'socialisme', 'anarchisme', 'résistance', 'lutte',
-        'police', 'répression', 'violence d\'état', 'prisonnier politique',
-        'liberté', 'démocratie', 'justice sociale', 'réforme agraire',
-        'environnement', 'climat', 'développement durable',
-        'gouvernement', 'élection', 'président', 'macron',
-        'économie', 'inflation', 'chômage', 'faim', 'pauvreté',
-        'éducation', 'santé', 'armée', 'intervention',
-        'guerre', 'conflit', 'attaque', 'bombe', 'armée', 'troupes',
-        'génocide', 'occupation', 'résistance', 'révolution',
-    ],
-    
-    # 🇩🇪 ALEMÃO
-    'de': [
-        'antifa', 'antifaschist', 'faschismus', 'nazismus', 'neonazi',
-        'soziale bewegung', 'protest', 'demonstration', 'streik', 'besetzung',
-        'menschenrechte', 'gleichheit', 'rassismus', 'feminismus', 'lgbtqia+',
-        'arbeiter', 'gewerkschaft', 'landlos', 'indigen',
-        'kommunismus', 'sozialismus', 'anarchismus', 'widerstand', 'kampf',
-        'polizei', 'repression', 'staatsgewalt', 'politischer gefangener',
-        'freiheit', 'demokratie', 'soziale gerechtigkeit', 'landreform',
-        'umwelt', 'klima', 'nachhaltigkeit',
-        'regierung', 'wahl', 'präsident', 'scholz',
-        'wirtschaft', 'inflation', 'arbeitslosigkeit', 'hunger', 'armut',
-        'bildung', 'gesundheit', 'militär', 'intervention',
-        'krieg', 'konflikt', 'angriff', 'bombe', 'armee', 'truppen',
-        'völkermord', 'besetzung', 'widerstand', 'revolution',
+        'petro', 'milei', 'lula', 'bukele', 'lópez',
     ],
 }
 
@@ -284,83 +258,57 @@ PALAVRAS_CHAVE = {
 # ============================================
 
 FONTES_CONFIAVEIS = [
-    # ===== 🇧🇷 BRASIL (NACIONAL) =====
-    # Movimentos sociais
-    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9},
-    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9},
-    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8},
-    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9},
-    {'nome': 'The Intercept Brasil', 'pais': 'Brasil', 'url': 'https://theintercept.com/brasil/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8},
-    {'nome': 'Revista Fórum', 'pais': 'Brasil', 'url': 'https://revistaforum.com.br/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8},
-    {'nome': 'Brasil 247', 'pais': 'Brasil', 'url': 'https://www.brasil247.com/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 7},
-    {'nome': 'Diário do Centro do Mundo', 'pais': 'Brasil', 'url': 'https://www.diariodocentrodomundo.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 7},
-    
-    # Mídia alternativa
-    {'nome': 'Mídia Ninja', 'pais': 'Brasil', 'url': 'https://midianinja.org/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9},
-    {'nome': 'Jornalistas Livres', 'pais': 'Brasil', 'url': 'https://jornalistaslivres.org/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9},
-    {'nome': 'Brasil Wire', 'pais': 'Brasil', 'url': 'https://brasilwire.com/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8},
-    
-    # Movimentos específicos
-    {'nome': 'MTST', 'pais': 'Brasil', 'url': 'https://mtst.org/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9},
-    {'nome': 'UNE', 'pais': 'Brasil', 'url': 'https://une.org.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8},
-    {'nome': 'CUT', 'pais': 'Brasil', 'url': 'https://www.cut.org.br/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9},
+    # ===== 🇧🇷 BRASIL (NACIONAL) PRIORIDADE MÁXIMA =====
+    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 10, 'prioridade': 1},
+    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 10, 'prioridade': 1},
+    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'The Intercept Brasil', 'pais': 'Brasil', 'url': 'https://theintercept.com/brasil/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8, 'prioridade': 1},
+    {'nome': 'Brasil 247', 'pais': 'Brasil', 'url': 'https://www.brasil247.com/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 7, 'prioridade': 1},
+    {'nome': 'Diário do Centro do Mundo', 'pais': 'Brasil', 'url': 'https://www.diariodocentrodomundo.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 7, 'prioridade': 1},
+    {'nome': 'Mídia Ninja', 'pais': 'Brasil', 'url': 'https://midianinja.org/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'Jornalistas Livres', 'pais': 'Brasil', 'url': 'https://jornalistaslivres.org/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'MTST', 'pais': 'Brasil', 'url': 'https://mtst.org/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'UNE', 'pais': 'Brasil', 'url': 'https://une.org.br/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 8, 'prioridade': 1},
+    {'nome': 'CUT', 'pais': 'Brasil', 'url': 'https://www.cut.org.br/feed', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 9, 'prioridade': 1},
+    {'nome': 'Folha de S.Paulo', 'pais': 'Brasil', 'url': 'https://feeds.folha.uol.com.br/emcimadahora/rss.xml', 'categoria': 'geral', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 6, 'prioridade': 2},
+    {'nome': 'O Globo', 'pais': 'Brasil', 'url': 'https://oglobo.globo.com/rss.xml', 'categoria': 'geral', 'idioma': 'pt', 'continente': 'América do Sul', 'confiabilidade': 6, 'prioridade': 2},
     
     # ===== 🇵🇹 PORTUGAL =====
-    {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'Europa', 'confiabilidade': 9},
-    {'nome': 'Jornal Tornado', 'pais': 'Portugal', 'url': 'https://jornaltornado.pt/feed/', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'Europa', 'confiabilidade': 8},
+    {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria': 'antifa', 'idioma': 'pt', 'continente': 'Europa', 'confiabilidade': 9, 'prioridade': 2},
     
     # ===== 🌎 AMÉRICA LATINA =====
-    {'nome': 'Página 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Sul', 'confiabilidade': 8},
-    {'nome': 'La Jornada', 'pais': 'México', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Norte', 'confiabilidade': 8},
-    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Sul', 'confiabilidade': 7},
-    {'nome': 'Resumen Latinoamericano', 'pais': 'Argentina', 'url': 'https://www.resumenlatinoamericano.org/feed/', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Sul', 'confiabilidade': 9},
-    {'nome': 'ANRed', 'pais': 'Argentina', 'url': 'https://www.anred.org/feed/', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Sul', 'confiabilidade': 9},
+    {'nome': 'Página 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Sul', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'La Jornada', 'pais': 'México', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Norte', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'antifa', 'idioma': 'es', 'continente': 'América do Sul', 'confiabilidade': 7, 'prioridade': 2},
     
     # ===== 🇺🇸 USA / INTERNACIONAL =====
-    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9},
-    {'nome': 'CrimethInc', 'pais': 'Global', 'url': 'https://crimethinc.com/feeds/all.atom.xml', 'categoria': 'anarquista', 'idioma': 'en', 'continente': 'Global', 'confiabilidade': 9},
-    {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Global', 'confiabilidade': 9},
-    {'nome': 'The Real News', 'pais': 'USA', 'url': 'https://therealnews.com/rss', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8},
-    {'nome': 'Democracy Now', 'pais': 'USA', 'url': 'https://www.democracynow.org/podcast.xml', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9},
-    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8},
-    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9},
-    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8},
-    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'comunista', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8},
+    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9, 'prioridade': 2},
+    {'nome': 'CrimethInc', 'pais': 'Global', 'url': 'https://crimethinc.com/feeds/all.atom.xml', 'categoria': 'anarquista', 'idioma': 'en', 'continente': 'Global', 'confiabilidade': 9, 'prioridade': 2},
+    {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Global', 'confiabilidade': 9, 'prioridade': 2},
+    {'nome': 'Democracy Now', 'pais': 'USA', 'url': 'https://www.democracynow.org/podcast.xml', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9, 'prioridade': 2},
+    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 9, 'prioridade': 2},
+    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'comunista', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8, 'prioridade': 2},
     
     # ===== 🇬🇧 UK / EUROPA =====
-    {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 9},
-    {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 8},
-    {'nome': 'Ceasefire Magazine', 'pais': 'UK', 'url': 'https://ceasefiremagazine.co.uk/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 8},
-    {'nome': 'Red Pepper', 'pais': 'UK', 'url': 'https://www.redpepper.org.uk/feed/', 'categoria': 'comunista', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 9},
-    {'nome': 'Morning Star', 'pais': 'UK', 'url': 'https://morningstaronline.co.uk/rss.xml', 'categoria': 'comunista', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 8},
+    {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 9, 'prioridade': 2},
+    {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'Ceasefire Magazine', 'pais': 'UK', 'url': 'https://ceasefiremagazine.co.uk/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Europa', 'confiabilidade': 8, 'prioridade': 2},
     
-    # ===== 🇩🇪 ALEMANHA =====
-    {'nome': 'Junge Welt', 'pais': 'Alemanha', 'url': 'https://www.jungewelt.de/feed', 'categoria': 'comunista', 'idioma': 'de', 'continente': 'Europa', 'confiabilidade': 8},
+    # ===== ORIENTE MÉDIO =====
+    {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio', 'confiabilidade': 8, 'prioridade': 2},
+    {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio', 'confiabilidade': 7, 'prioridade': 2},
+    {'nome': 'Haaretz', 'pais': 'Israel', 'url': 'https://www.haaretz.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio', 'confiabilidade': 7, 'prioridade': 2},
     
-    # ===== 🇫🇷 FRANÇA =====
-    {'nome': 'Le Monde Diplomatique', 'pais': 'França', 'url': 'https://www.monde-diplomatique.fr/rss', 'categoria': 'antifa', 'idioma': 'fr', 'continente': 'Europa', 'confiabilidade': 8},
-    
-    # ===== 🇨🇦 CANADÁ =====
-    {'nome': 'The Maple', 'pais': 'Canadá', 'url': 'https://www.themaple.ca/feed/', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'América do Norte', 'confiabilidade': 8},
-    
-    # ===== 🇦🇺 AUSTRÁLIA =====
-    {'nome': 'Red Flag', 'pais': 'Austrália', 'url': 'https://redflag.org.au/feed', 'categoria': 'comunista', 'idioma': 'en', 'continente': 'Oceania', 'confiabilidade': 8},
-    
-    # ===== 🌍 ÁFRICA =====
-    {'nome': 'Pambazuka News', 'pais': 'África', 'url': 'https://www.pambazuka.org/feed', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'África', 'confiabilidade': 9},
-    
-    # ===== 🇮🇳 ÍNDIA =====
-    {'nome': 'The Wire', 'pais': 'Índia', 'url': 'https://thewire.in/feed', 'categoria': 'antifa', 'idioma': 'en', 'continente': 'Ásia', 'confiabilidade': 7},
-    
-    # ===== 🇯🇵 JAPÃO =====
-    {'nome': 'Japan Press Weekly', 'pais': 'Japão', 'url': 'http://www.japan-press.co.jp/rss', 'categoria': 'comunista', 'idioma': 'en', 'continente': 'Ásia', 'confiabilidade': 7},
-    
-    # ===== 🇨🇳 CHINA =====
-    {'nome': 'China Daily', 'pais': 'China', 'url': 'https://www.chinadaily.com.cn/rss/', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia', 'confiabilidade': 5},
+    # ===== ÁSIA =====
+    {'nome': 'The Hindu', 'pais': 'Índia', 'url': 'https://www.thehindu.com/news/feeder', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia', 'confiabilidade': 7, 'prioridade': 3},
+    {'nome': 'The Japan Times', 'pais': 'Japão', 'url': 'https://www.japantimes.co.jp/feed/', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia', 'confiabilidade': 7, 'prioridade': 3},
 ]
 
 # ============================================
-# SISTEMA DE RADAR SUPREMO (BUSCA PARALELA INTELIGENTE)
+# SISTEMA DE RADAR AUTOMÁTICO (SEM BOTÃO)
 # ============================================
 
 @dataclass
@@ -382,9 +330,10 @@ class NoticiaAntifa:
     confiabilidade: int = 5
     imagem: Optional[str] = None
     autor: Optional[str] = None
+    horario_brasilia: str = field(default_factory=horario_brasilia)
 
-class RadarSupremoAntifa:
-    """Sistema de radar global com busca paralela"""
+class RadarAutomaticoAntifa:
+    """Sistema de radar automático com timer de 5 segundos"""
     
     def __init__(self):
         self.fontes_ativas = []
@@ -397,87 +346,110 @@ class RadarSupremoAntifa:
             'categorias': defaultdict(int),
             'idiomas': defaultdict(int),
             'palavras_mais_usadas': Counter(),
+            'fontes_por_prioridade': {1: 0, 2: 0, 3: 0},
         }
         self.cache_resultados = {}
         self.fila_buscas = queue.Queue()
-        self.sessoes = {}
+        self.radar_ativo = False
+        self.thread_radar = None
         
-    def varrer_mundo(self, palavras_especificas: List[str] = None) -> List[NoticiaAntifa]:
-        """
-        Executa varredura global em paralelo com palavras-chave
-        """
-        logger.info("🛰️🏴 ATIVANDO RADAR SUPREMO ANTIFA...")
+    def iniciar_radar_automatico(self):
+        """Inicia o radar automático em background (SEM BOTÃO)"""
+        if self.radar_ativo:
+            return
         
-        resultados = []
-        fontes_para_buscar = FONTES_CONFIAVEIS.copy()
-        
-        # Prioriza fontes por confiabilidade
-        fontes_para_buscar.sort(key=lambda x: x['confiabilidade'], reverse=True)
-        
-        # Usa palavras-chave se fornecidas
-        palavras = palavras_especificas or self._selecionar_palavras_aleatorias()
-        
-        with ThreadPoolExecutor(max_workers=config.MAX_TRABALHADORES) as executor:
-            futures = {}
-            for fonte in fontes_para_buscar:
-                future = executor.submit(
-                    self._testar_fonte_com_palavras, 
-                    fonte, 
-                    palavras
-                )
-                futures[future] = fonte
-            
-            total_fontes = len(futures)
-            processadas = 0
-            
-            for future in as_completed(futures):
-                processadas += 1
-                fonte = futures[future]
-                try:
-                    noticias = future.result(timeout=config.TIMEOUT_TOTAL)
-                    if noticias:
-                        resultados.extend(noticias)
-                        self.fontes_ativas.append(fonte['nome'])
-                        self.estatisticas['fontes_funcionando'] += 1
-                        self.estatisticas['continentes'].add(fonte['continente'])
-                        self.estatisticas['paises'].add(fonte['pais'])
-                        self.estatisticas['categorias'][fonte['categoria']] += 1
-                        self.estatisticas['idiomas'][fonte['idioma']] += 1
-                        
-                        # Atualiza palavras mais usadas
-                        for noticia in noticias:
-                            for palavra in noticia.palavras_chave:
-                                self.estatisticas['palavras_mais_usadas'][palavra] += 1
-                        
-                        logger.info(f"📡 {processadas}/{total_fontes} - ✅ {fonte['continente']} - {fonte['pais']}: {fonte['nome']} ({len(noticias)} notícias)")
-                    else:
-                        logger.debug(f"📡 {processadas}/{total_fontes} - ❌ {fonte['nome']} - sem notícias")
-                        
-                except TimeoutError:
-                    logger.debug(f"📡 {processadas}/{total_fontes} - ⏰ {fonte['nome']} - timeout")
-                except Exception as e:
-                    logger.debug(f"📡 {processadas}/{total_fontes} - ❌ {fonte['nome']} - erro: {str(e)[:50]}")
-        
-        logger.info(f"✅🏴 RADAR CONCLUÍDO: {len(resultados)} notícias de {self.estatisticas['fontes_funcionando']} fontes")
-        return resultados
+        self.radar_ativo = True
+        self.thread_radar = threading.Thread(target=self._loop_radar)
+        self.thread_radar.daemon = True
+        self.thread_radar.start()
+        logger.info("🛰️🏴 RADAR AUTOMÁTICO INICIADO - 5 SEGUNDOS ENTRE FONTES")
     
-    def _selecionar_palavras_aleatorias(self) -> List[str]:
-        """Seleciona palavras-chave aleatórias de diferentes idiomas"""
-        palavras_selecionadas = []
-        idiomas = list(PALAVRAS_CHAVE.keys())
+    def _loop_radar(self):
+        """Loop principal do radar (executa a cada 5 segundos)"""
+        time.sleep(config.DELAY_INICIAL)
         
-        # Seleciona palavras de cada idioma
-        for _ in range(config.MAX_PALAVRAS_POR_BUSCA):
-            idioma = random.choice(idiomas)
-            palavra = random.choice(PALAVRAS_CHAVE[idioma])
-            palavras_selecionadas.append(palavra)
-        
-        return list(set(palavras_selecionadas))  # Remove duplicatas
+        while self.radar_ativo:
+            try:
+                self._executar_varredura_completa()
+                time.sleep(config.TEMPO_ATUALIZACAO * 60)  # Espera minutos
+            except Exception as e:
+                logger.error(f"❌ Erro no loop do radar: {e}")
+                time.sleep(60)  # Espera 1 minuto em caso de erro
     
-    def _testar_fonte_com_palavras(self, fonte: Dict, palavras: List[str]) -> List[NoticiaAntifa]:
-        """Testa uma fonte e busca notícias relacionadas às palavras-chave"""
+    def _executar_varredura_completa(self):
+        """Executa varredura completa com timer de 5 segundos"""
+        logger.info(f"\n{'='*60}")
+        logger.info(f"🛰️🏴 [{horario_brasilia()}] INICIANDO VARREDURA COMPLETA")
+        logger.info(f"{'='*60}")
         
+        # Ordena fontes por prioridade (primeiro as nacionais)
+        fontes_ordenadas = sorted(FONTES_CONFIAVEIS, key=lambda x: x['prioridade'])
+        
+        noticias_antigas = self._carregar_noticias()
+        links_antigos = {n.link for n in noticias_antigas}
+        todas_noticias_novas = []
+        
+        total_fontes = len(fontes_ordenadas)
+        processadas = 0
+        fontes_ativas_temp = 0
+        
+        for fonte in fontes_ordenadas:
+            processadas += 1
+            logger.info(f"\n📡 [{processadas}/{total_fontes}] Processando: {fonte['nome']} ({fonte['pais']})")
+            
+            # ⏱️ TIMER DE 5 SEGUNDOS ENTRE CADA FONTE
+            time.sleep(config.DELAY_ENTRE_REQUISICOES)
+            
+            # Seleciona palavras-chave para esta fonte
+            palavras = self._selecionar_palavras_para_idioma(fonte['idioma'])
+            
+            # Processa a fonte
+            noticias = self._processar_fonte(fonte, palavras, links_antigos)
+            
+            if noticias:
+                todas_noticias_novas.extend(noticias)
+                fontes_ativas_temp += 1
+                self.fontes_ativas.append(fonte['nome'])
+                self.estatisticas['fontes_funcionando'] += 1
+                self.estatisticas['continentes'].add(fonte['continente'])
+                self.estatisticas['paises'].add(fonte['pais'])
+                self.estatisticas['categorias'][fonte['categoria']] += 1
+                self.estatisticas['idiomas'][fonte['idioma']] += 1
+                self.estatisticas['fontes_por_prioridade'][fonte['prioridade']] += 1
+        
+        # Atualiza estatísticas
+        self.estatisticas['total_buscas'] += 1
+        self.estatisticas['noticias_encontradas'] += len(todas_noticias_novas)
+        
+        # Salva notícias
+        if todas_noticias_novas:
+            todas_noticias = todas_noticias_novas + noticias_antigas
+            todas_noticias.sort(key=lambda x: x.data, reverse=True)
+            todas_noticias = todas_noticias[:config.MAX_NOTICIAS_TOTAL]
+            
+            # Marca destaques
+            for i, n in enumerate(todas_noticias[:10]):
+                n.destaque = True
+            
+            self._salvar_noticias(todas_noticias)
+            
+            logger.info(f"\n{'='*60}")
+            logger.info(f"✅ VARREDURA CONCLUÍDA - {horario_brasilia()}")
+            logger.info(f"📊 RESULTADOS:")
+            logger.info(f"  📡 Fontes ativas: {fontes_ativas_temp}")
+            logger.info(f"  📰 Notícias novas: {len(todas_noticias_novas)}")
+            logger.info(f"  🌍 Continentes: {len(self.estatisticas['continentes'])}")
+            logger.info(f"  🏳️ Países: {len(self.estatisticas['paises'])}")
+            logger.info(f"  🇧🇷 Fontes nacionais: {self.estatisticas['fontes_por_prioridade'][1]}")
+            logger.info(f"  🌎 Fontes internacionais: {self.estatisticas['fontes_por_prioridade'][2] + self.estatisticas['fontes_por_prioridade'][3]}")
+            logger.info(f"{'='=60}")
+        else:
+            logger.info("ℹ️ Nenhuma notícia nova encontrada nesta varredura")
+    
+    def _processar_fonte(self, fonte, palavras, links_antigos):
+        """Processa uma fonte individual com timer de 5 segundos"""
         noticias = []
+        
         try:
             # Tenta com proxy se necessário
             proxy = None
@@ -497,12 +469,13 @@ class RadarSupremoAntifa:
                     if response.status_code == 200:
                         break
                     elif tentativa == config.MAX_TENTATIVAS - 1:
+                        logger.debug(f"❌ {fonte['nome']} - status {response.status_code}")
                         return []
                         
                 except Exception as e:
                     if tentativa == config.MAX_TENTATIVAS - 1:
+                        logger.debug(f"❌ {fonte['nome']} - erro: {str(e)[:30]}")
                         return []
-                    time.sleep(config.DELAY_ENTRE_REQUISICOES)
             
             # Parse do feed
             feed = feedparser.parse(response.content)
@@ -510,30 +483,32 @@ class RadarSupremoAntifa:
             if len(feed.entries) == 0:
                 return []
             
-            # Processa cada entrada
+            # Processa entradas
             for entrada in feed.entries[:config.MAX_NOTICIAS_POR_FONTE]:
-                noticia = self._criar_noticia(fonte, entrada, palavras)
+                if entrada.link in links_antigos:
+                    continue
+                
+                noticia = self._criar_noticia(fonte, entrada)
                 if noticia:
-                    # Verifica relevância (se contém palavras-chave)
+                    # Verifica relevância
                     relevancia = self._calcular_relevancia(noticia, palavras)
-                    if relevancia > 0.3:  # 30% de relevância mínima
+                    if relevancia > 0.2:  # 20% de relevância mínima
                         noticias.append(noticia)
                         
-                        # Registra palavras encontradas
+                        # Atualiza palavras-chave
                         for palavra in palavras:
                             if palavra.lower() in noticia.titulo.lower() or palavra.lower() in noticia.resumo.lower():
                                 self.estatisticas['palavras_mais_usadas'][palavra] += 1
             
-            # Pequeno delay para não sobrecarregar
-            time.sleep(random.uniform(0.1, 0.3))
+            logger.info(f"  ✅ {fonte['nome']} - {len(noticias)} notícias")
             
         except Exception as e:
-            logger.debug(f"Erro ao processar {fonte['nome']}: {e}")
+            logger.debug(f"❌ Erro em {fonte['nome']}: {str(e)[:30]}")
         
         return noticias
     
-    def _criar_noticia(self, fonte: Dict, entrada, palavras: List[str]) -> Optional[NoticiaAntifa]:
-        """Cria objeto de notícia a partir da entrada do feed"""
+    def _criar_noticia(self, fonte, entrada):
+        """Cria objeto de notícia"""
         try:
             # Extrai resumo
             resumo = ""
@@ -561,14 +536,14 @@ class RadarSupremoAntifa:
             if not data:
                 data = datetime.now().strftime('%Y-%m-%d %H:%M')
             
-            # Extrai autor se disponível
+            # Extrai autor
             autor = None
             if hasattr(entrada, 'author'):
                 autor = entrada.author
             elif hasattr(entrada, 'creator'):
                 autor = entrada.creator
             
-            # Extrai imagem se disponível
+            # Extrai imagem
             imagem = None
             if hasattr(entrada, 'media_content') and entrada.media_content:
                 for media in entrada.media_content:
@@ -581,16 +556,7 @@ class RadarSupremoAntifa:
                         imagem = link['href']
                         break
             
-            # Palavras-chave encontradas na notícia
-            palavras_encontradas = []
-            titulo_lower = entrada.title.lower()
-            resumo_lower = resumo.lower()
-            
-            for palavra in palavras:
-                if palavra.lower() in titulo_lower or palavra.lower() in resumo_lower:
-                    palavras_encontradas.append(palavra)
-            
-            noticia = NoticiaAntifa(
+            return NoticiaAntifa(
                 id=hashlib.md5(entrada.link.encode()).hexdigest()[:12],
                 fonte=fonte['nome'],
                 pais=fonte['pais'],
@@ -601,20 +567,38 @@ class RadarSupremoAntifa:
                 resumo=html.unescape(resumo),
                 link=entrada.link,
                 data=data,
-                publicada_em=datetime.now().isoformat(),
-                palavras_chave=palavras_encontradas,
+                publicada_em=horario_brasilia(),
+                palavras_chave=[],
                 confiabilidade=fonte['confiabilidade'],
                 imagem=imagem,
-                autor=autor
+                autor=autor,
+                horario_brasilia=horario_brasilia()
             )
-            
-            return noticia
             
         except Exception as e:
             logger.debug(f"Erro ao criar notícia: {e}")
             return None
     
-    def _calcular_relevancia(self, noticia: NoticiaAntifa, palavras: List[str]) -> float:
+    def _selecionar_palavras_para_idioma(self, idioma):
+        """Seleciona palavras-chave para um idioma específico"""
+        if idioma in PALAVRAS_CHAVE:
+            palavras = PALAVRAS_CHAVE[idioma]
+            return random.sample(palavras, min(config.MAX_PALAVRAS_POR_BUSCA, len(palavras)))
+        return []
+    
+    def _selecionar_palavras_aleatorias(self):
+        """Seleciona palavras-chave aleatórias de diferentes idiomas"""
+        palavras_selecionadas = []
+        idiomas = list(PALAVRAS_CHAVE.keys())
+        
+        for _ in range(config.MAX_PALAVRAS_POR_BUSCA):
+            idioma = random.choice(idiomas)
+            palavra = random.choice(PALAVRAS_CHAVE[idioma])
+            palavras_selecionadas.append(palavra)
+        
+        return list(set(palavras_selecionadas))
+    
+    def _calcular_relevancia(self, noticia, palavras):
         """Calcula a relevância da notícia baseada nas palavras-chave"""
         if not palavras:
             return 0.5
@@ -627,156 +611,122 @@ class RadarSupremoAntifa:
                 palavras_encontradas += 1
         
         return palavras_encontradas / len(palavras) if palavras else 0
-
-radar = RadarSupremoAntifa()
+    
+    def _carregar_noticias(self):
+        """Carrega notícias do arquivo"""
+        if os.path.exists(config.ARQUIVO_NOTICIAS):
+            try:
+                with open(config.ARQUIVO_NOTICIAS, 'r', encoding='utf-8') as f:
+                    dados = json.load(f)
+                    noticias_dict = dados.get('noticias', [])
+                    
+                    noticias = []
+                    for n in noticias_dict:
+                        try:
+                            noticias.append(NoticiaAntifa(**n))
+                        except:
+                            pass
+                    return noticias
+            except:
+                return []
+        return []
+    
+    def _salvar_noticias(self, noticias):
+        """Salva notícias no arquivo"""
+        try:
+            noticias_dict = [asdict(n) for n in noticias]
+            
+            with open(config.ARQUIVO_NOTICIAS, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'noticias': noticias_dict,
+                    'ultima_atualizacao': horario_brasilia(),
+                    'total': len(noticias_dict),
+                    'estatisticas': {
+                        'continentes': list(self.estatisticas['continentes']),
+                        'paises': list(self.estatisticas['paises']),
+                        'categorias': dict(self.estatisticas['categorias']),
+                        'idiomas': dict(self.estatisticas['idiomas']),
+                        'palavras_mais_usadas': dict(self.estatisticas['palavras_mais_usadas'].most_common(30)),
+                    },
+                    'versao': '10.0 - FINAL',
+                    'horario_brasilia': horario_brasilia(),
+                }, f, ensure_ascii=False, indent=2, default=str)
+            
+            logger.info(f"✅🏴 Notícias salvas: {len(noticias)}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Erro ao salvar: {e}")
+            return False
 
 # ============================================
-# FUNÇÕES AUXILIARES
+# INICIALIZAÇÃO DO RADAR
 # ============================================
 
-def carregar_cache():
-    """Carrega cache de fontes que funcionaram"""
-    if os.path.exists(config.ARQUIVO_CACHE):
-        try:
-            with open(config.ARQUIVO_CACHE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return {'funcionaram': [], 'ultima_atualizacao': None}
-    return {'funcionaram': [], 'ultima_atualizacao': None}
+radar = RadarAutomaticoAntifa()
 
-def salvar_cache(cache):
-    """Salva cache de fontes que funcionaram"""
-    try:
-        with open(config.ARQUIVO_CACHE, 'w', encoding='utf-8') as f:
-            json.dump(cache, f, ensure_ascii=False, indent=2)
-    except:
-        pass
+# ============================================
+# FUNÇÃO PARA PEGAR BANDEIRAS
+# ============================================
 
-def salvar_noticias(noticias: List[NoticiaAntifa]):
-    """Salva notícias com validação"""
-    try:
-        # Converte para dicionário
-        noticias_dict = [asdict(n) for n in noticias]
-        
-        with open(config.ARQUIVO_NOTICIAS, 'w', encoding='utf-8') as f:
-            json.dump({
-                'noticias': noticias_dict,
-                'ultima_atualizacao': datetime.now().isoformat(),
-                'total': len(noticias_dict),
-                'estatisticas': {
-                    'continentes': list(radar.estatisticas['continentes']),
-                    'paises': list(radar.estatisticas['paises']),
-                    'categorias': dict(radar.estatisticas['categorias']),
-                    'idiomas': dict(radar.estatisticas['idiomas']),
-                    'palavras_mais_usadas': dict(radar.estatisticas['palavras_mais_usadas'].most_common(20)),
-                },
-                'versao': '9.0 - RADAR SUPREMO ANTIFA',
-                'config': {
-                    'fontes_total': len(FONTES_CONFIAVEIS),
-                    'palavras_chave_total': sum(len(p) for p in PALAVRAS_CHAVE.values()),
-                }
-            }, f, ensure_ascii=False, indent=2, default=str)
-        
-        logger.info(f"✅🏴 Notícias salvas: {len(noticias)}")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Erro ao salvar: {e}")
-        return False
-
-def carregar_noticias() -> List[NoticiaAntifa]:
-    """Carrega notícias com fallback"""
-    if os.path.exists(config.ARQUIVO_NOTICIAS):
-        try:
-            with open(config.ARQUIVO_NOTICIAS, 'r', encoding='utf-8') as f:
-                dados = json.load(f)
-                noticias_dict = dados.get('noticias', [])
-                
-                # Converte de volta para objetos NoticiaAntifa
-                noticias = []
-                for n in noticias_dict:
-                    try:
-                        noticias.append(NoticiaAntifa(**n))
-                    except:
-                        pass
-                return noticias
-        except:
-            return []
-    return []
-
-def buscar_noticias_supremo():
-    """Função principal de busca com radar supremo"""
-    
-    logger.info(f"\n{'='*60}")
-    logger.info(f"🛰️🏴 [{datetime.now().strftime('%H:%M:%S')}] ATIVANDO RADAR SUPREMO ANTIFA")
-    logger.info(f"{'='*60}")
-    
-    # Seleciona palavras-chave aleatórias
-    palavras = radar._selecionar_palavras_aleatorias()
-    logger.info(f"🔍 Palavras-chave: {', '.join(palavras[:5])}... ({len(palavras)} total)")
-    
-    # Carrega notícias antigas
-    noticias_antigas = carregar_noticias()
-    links_antigos = {n.link for n in noticias_antigas}
-    
-    # Varre o mundo com palavras-chave
-    novas_noticias = radar.varrer_mundo(palavras)
-    
-    # Filtra notícias já existentes
-    noticias_novas = [n for n in novas_noticias if n.link not in links_antigos]
-    
-    # Relatório do radar
-    logger.info(f"\n{'='*60}")
-    logger.info(f"📊 RELATÓRIO DO RADAR SUPREMO:")
-    logger.info(f"  📡 Fontes ativas: {radar.estatisticas['fontes_funcionando']}")
-    logger.info(f"  🌍 Continentes cobertos: {len(radar.estatisticas['continentes'])}")
-    logger.info(f"  🏳️ Países: {len(radar.estatisticas['paises'])}")
-    logger.info(f"  🔤 Idiomas: {len(radar.estatisticas['idiomas'])}")
-    logger.info(f"  📰 Notícias novas: {len(noticias_novas)}")
-    logger.info(f"{'='*60}")
-    
-    if noticias_novas:
-        todas_noticias = noticias_novas + noticias_antigas
-        todas_noticias.sort(key=lambda x: x.data, reverse=True)
-        todas_noticias = todas_noticias[:config.MAX_NOTICIAS_TOTAL]
-        
-        # Marca algumas como destaque
-        for i, n in enumerate(todas_noticias[:7]):
-            n.destaque = True
-        
-        if salvar_noticias(todas_noticias):
-            logger.info(f"  🎯 {len(noticias_novas)} nova(s) notícia(s) de {radar.estatisticas['fontes_funcionando']} fontes!")
-            logger.info(f"  📊 Acervo total: {len(todas_noticias)}")
-    else:
-        logger.info("  ℹ️ Nenhuma notícia nova encontrada")
-    
-    return noticias_novas
+def get_bandeira(pais):
+    """Retorna a bandeira emoji para o país"""
+    bandeiras = {
+        'Brasil': '🇧🇷',
+        'Portugal': '🇵🇹',
+        'Argentina': '🇦🇷',
+        'México': '🇲🇽',
+        'Venezuela': '🇻🇪',
+        'USA': '🇺🇸',
+        'UK': '🇬🇧',
+        'Alemanha': '🇩🇪',
+        'França': '🇫🇷',
+        'Espanha': '🇪🇸',
+        'Itália': '🇮🇹',
+        'Canadá': '🇨🇦',
+        'Austrália': '🇦🇺',
+        'Japão': '🇯🇵',
+        'China': '🇨🇳',
+        'Índia': '🇮🇳',
+        'Israel': '🇮🇱',
+        'Qatar': '🇶🇦',
+        'Global': '🌍',
+        'África do Sul': '🇿🇦',
+        'Quênia': '🇰🇪',
+        'Congo': '🇨🇩',
+        'Bélgica': '🇧🇪',
+        'Irã': '🇮🇷',
+        'Emirados': '🇦🇪',
+        'Singapura': '🇸🇬',
+        'Coreia do Sul': '🇰🇷',
+        'Hong Kong': '🇭🇰',
+        'Nova Zelândia': '🇳🇿',
+    }
+    return bandeiras.get(pais, '🏴')
 
 app = Flask(__name__)
 
 # ============================================
-# PÁGINA PRINCIPAL - DESIGN ANTIFA SUPREMO
+# PÁGINA PRINCIPAL - DESIGN SOFISTICADO
 # ============================================
 
 @app.route('/')
 def home():
-    noticias = carregar_noticias()
+    noticias = radar._carregar_noticias()
     
     # Separa por categoria
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
     antifa = [n for n in noticias if n.categoria in ['antifa', 'anarquista', 'comunista']]
     nacionais = [n for n in noticias if n.pais == 'Brasil']
     internacionais = [n for n in noticias if n.pais != 'Brasil']
+    destaques = [n for n in noticias if n.destaque][:8]
     
-    # Destaques
-    destaques = [n for n in noticias if n.destaque][:5]
-    
-    # Estatísticas por continente
+    # Estatísticas
     continentes = defaultdict(int)
     for n in noticias:
         continentes[n.continente] += 1
     
-    # Estatísticas de palavras
-    palavras_stats = radar.estatisticas['palavras_mais_usadas'].most_common(10)
+    # Palavras mais usadas
+    palavras_stats = radar.estatisticas['palavras_mais_usadas'].most_common(15)
     
     # HTML dos destaques
     destaques_html = ''
@@ -785,59 +735,61 @@ def home():
         destaques_html += f'''
         <div class="destaque-card">
             <span class="destaque-tag">⭐ DESTAQUE</span>
-            <span class="fonte">{bandeira} {n.fonte}</span>
-            <h3>{n.titulo}</h3>
-            <p>{n.resumo[:150]}...</p>
-            <div class="card-footer">
-                <span class="data">{n.data[:16]}</span>
-                <a href="{n.link}" target="_blank">Ler mais →</a>
+            <div class="destaque-header">
+                <span class="fonte">{bandeira} {n.fonte}</span>
+                <span class="confiabilidade">{'★' * n.confiabilidade}{'☆' * (10 - n.confiabilidade)}</span>
             </div>
+            <h3>{n.titulo}</h3>
+            <p class="destaque-resumo">{n.resumo[:150]}...</p>
+            <div class="destaque-footer">
+                <span class="data">🕒 {n.data[:16]}</span>
+                <a href="{n.link}" target="_blank" class="ler-mais">Ler artigo completo →</a>
+            </div>
+            <div class="horario-brasilia">🇧🇷 {n.horario_brasilia if hasattr(n, 'horario_brasilia') else horario_brasilia()}</div>
         </div>
         '''
     
     # HTML Geopolítica
     geo_html = ''
-    for n in geopolitica[:10]:
+    for n in geopolitica[:12]:
         bandeira = get_bandeira(n.pais)
         geo_html += f'''
         <article class="noticia">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">{n.pais}</span>
-                <span class="confiabilidade" title="Confiabilidade">{'★' * n.confiabilidade}{'☆' * (9 - n.confiabilidade)}</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
-                <span class="data">{n.data[:16]}</span>
-                <a href="{n.link}" target="_blank">🔗</a>
+                <span class="data">🕒 {n.data[:10]}</span>
+                <a href="{n.link}" target="_blank" class="ler-link">🔗</a>
             </div>
         </article>
         '''
     
     # HTML Antifa
     antifa_html = ''
-    for n in antifa[:10]:
+    for n in antifa[:12]:
         bandeira = get_bandeira(n.pais)
         antifa_html += f'''
-        <article class="noticia">
+        <article class="noticia antifa">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">{n.pais}</span>
-                <span class="categoria-badge {n.categoria}">🏴 {n.categoria}</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
-                <span class="data">{n.data[:16]}</span>
-                <a href="{n.link}" target="_blank">🔗</a>
+                <span class="data">🕒 {n.data[:10]}</span>
+                <a href="{n.link}" target="_blank" class="ler-link">🔗</a>
             </div>
         </article>
         '''
     
-    # HTML Nacionais (Brasil)
+    # HTML Nacionais
     nacional_html = ''
-    for n in nacionais[:10]:
+    for n in nacionais[:12]:
         bandeira = get_bandeira(n.pais)
         nacional_html += f'''
         <article class="noticia nacional">
@@ -848,15 +800,15 @@ def home():
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
-                <span class="data">{n.data[:16]}</span>
-                <a href="{n.link}" target="_blank">🔗</a>
+                <span class="data">🕒 {n.data[:10]}</span>
+                <a href="{n.link}" target="_blank" class="ler-link">🔗</a>
             </div>
         </article>
         '''
     
     # HTML Internacionais
     internacional_html = ''
-    for n in internacionais[:10]:
+    for n in internacionais[:12]:
         bandeira = get_bandeira(n.pais)
         internacional_html += f'''
         <article class="noticia internacional">
@@ -867,21 +819,21 @@ def home():
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
-                <span class="data">{n.data[:16]}</span>
-                <a href="{n.link}" target="_blank">🔗</a>
+                <span class="data">🕒 {n.data[:10]}</span>
+                <a href="{n.link}" target="_blank" class="ler-link">🔗</a>
             </div>
         </article>
         '''
     
-    # HTML do mapa de continentes
+    # HTML dos badges de continentes
     continentes_html = ''
     for cont, qtd in continentes.items():
-        continentes_html += f'<span class="contente-badge">{cont}: {qtd}</span>'
+        continentes_html += f'<span class="badge-continente">{cont}: {qtd}</span>'
     
     # HTML das palavras mais usadas
     palavras_html = ''
     for palavra, count in palavras_stats:
-        palavras_html += f'<span class="palavra-badge">#{palavra}: {count}</span>'
+        palavras_html += f'<span class="badge-palavra">#{palavra} ({count})</span>'
     
     return f'''
     <!DOCTYPE html>
@@ -889,12 +841,12 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="Informação antifascista - Nacional e Internacional">
+        <meta name="description" content="Informação antifascista - Nacional e Internacional - Horário de Brasília">
         <meta name="keywords" content="antifa, antifascista, notícias, brasil, mundo, geopolítica">
         <meta name="author" content="SHARP - FRONT 16 RJ">
         <title>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</title>
         <style>
-            /* RESET E ESTILOS GLOBAIS */
+            /* RESET E ESTILOS GLOBAIS SOFISTICADOS */
             * {{
                 margin: 0;
                 padding: 0;
@@ -902,13 +854,13 @@ def home():
             }}
             
             body {{
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
                 background: #0a0a0a;
                 color: #e0e0e0;
                 line-height: 1.6;
             }}
             
-            /* HEADER COM DUAS BOLAS ANTIFA */
+            /* HEADER SUPREMO COM DUAS BOLAS ANIMADAS */
             .header {{
                 background: linear-gradient(135deg, #000000 0%, #1a0000 100%);
                 border-bottom: 4px solid #ff0000;
@@ -935,54 +887,70 @@ def home():
                 animation: moveStripes 30s linear infinite;
             }}
             
+            .header::after {{
+                content: '';
+                position: absolute;
+                bottom: -50%;
+                right: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(255,0,0,0.1) 0%, transparent 70%);
+                animation: rotate 40s linear infinite;
+            }}
+            
             @keyframes moveStripes {{
                 0% {{ transform: translateX(0) translateY(0); }}
                 100% {{ transform: translateX(50%) translateY(50%); }}
             }}
             
+            @keyframes rotate {{
+                from {{ transform: rotate(0deg); }}
+                to {{ transform: rotate(360deg); }}
+            }}
+            
             .bolas-container {{
                 position: absolute;
-                top: 20px;
-                right: 30px;
+                top: 30px;
+                right: 40px;
                 display: flex;
-                gap: 20px;
+                gap: 25px;
                 z-index: 10;
             }}
             
             .bola-vermelha {{
-                width: 70px;
-                height: 70px;
+                width: 80px;
+                height: 80px;
                 background: #ff0000;
                 border-radius: 50%;
-                box-shadow: 0 0 40px rgba(255,0,0,0.8);
-                animation: pulsar-vermelha 2s infinite ease-in-out;
+                box-shadow: 0 0 50px rgba(255,0,0,0.8);
+                animation: pulsar-vermelha 2.5s infinite ease-in-out;
             }}
             
             .bola-preta {{
-                width: 70px;
-                height: 70px;
+                width: 80px;
+                height: 80px;
                 background: #000;
                 border-radius: 50%;
                 border: 3px solid #ff0000;
-                box-shadow: 0 0 40px rgba(255,0,0,0.5);
-                animation: pulsar-preta 2.5s infinite ease-in-out;
+                box-shadow: 0 0 50px rgba(255,0,0,0.5);
+                animation: pulsar-preta 3s infinite ease-in-out;
             }}
             
             @keyframes pulsar-vermelha {{
-                0% {{ transform: scale(1); box-shadow: 0 0 40px rgba(255,0,0,0.8); }}
-                50% {{ transform: scale(1.15); box-shadow: 0 0 70px rgba(255,0,0,1); }}
-                100% {{ transform: scale(1); box-shadow: 0 0 40px rgba(255,0,0,0.8); }}
+                0% {{ transform: scale(1); box-shadow: 0 0 50px rgba(255,0,0,0.8); }}
+                50% {{ transform: scale(1.15); box-shadow: 0 0 80px rgba(255,0,0,1); }}
+                100% {{ transform: scale(1); box-shadow: 0 0 50px rgba(255,0,0,0.8); }}
             }}
             
             @keyframes pulsar-preta {{
-                0% {{ transform: scale(1); box-shadow: 0 0 30px rgba(255,0,0,0.4); }}
-                50% {{ transform: scale(1.1); box-shadow: 0 0 60px rgba(255,0,0,0.8); }}
-                100% {{ transform: scale(1); box-shadow: 0 0 30px rgba(255,0,0,0.4); }}
+                0% {{ transform: scale(1); box-shadow: 0 0 40px rgba(255,0,0,0.4); }}
+                50% {{ transform: scale(1.1); box-shadow: 0 0 70px rgba(255,0,0,0.8); }}
+                100% {{ transform: scale(1); box-shadow: 0 0 40px rgba(255,0,0,0.4); }}
             }}
             
             h1 {{
                 color: #ff0000;
-                font-size: clamp(2.5rem, 8vw, 4rem);
+                font-size: clamp(2.8rem, 8vw, 4.5rem);
                 font-weight: 900;
                 letter-spacing: 4px;
                 margin-bottom: 15px;
@@ -994,7 +962,7 @@ def home():
             
             .subtitulo {{
                 color: #ccc;
-                font-size: 1.3rem;
+                font-size: 1.4rem;
                 margin-bottom: 30px;
                 position: relative;
                 z-index: 1;
@@ -1003,6 +971,30 @@ def home():
                 border-bottom: 1px solid #ff0000;
                 padding: 15px 0;
                 display: inline-block;
+                background: rgba(0,0,0,0.5);
+                backdrop-filter: blur(5px);
+                border-radius: 50px;
+                padding: 15px 40px;
+            }}
+            
+            .horario-brasilia-header {{
+                position: absolute;
+                bottom: 15px;
+                left: 30px;
+                color: #888;
+                font-size: 0.9rem;
+                background: rgba(0,0,0,0.7);
+                padding: 8px 20px;
+                border-radius: 30px;
+                border: 1px solid #ff0000;
+                z-index: 10;
+                animation: pulse-border 2s infinite;
+            }}
+            
+            @keyframes pulse-border {{
+                0% {{ border-color: #ff0000; }}
+                50% {{ border-color: #ff6666; }}
+                100% {{ border-color: #ff0000; }}
             }}
             
             .stats-supremas {{
@@ -1030,8 +1022,8 @@ def home():
             .stat-supremo:hover {{
                 background: #ff0000;
                 color: #000;
-                transform: translateY(-3px);
-                box-shadow: 0 10px 25px rgba(255,0,0,0.4);
+                transform: translateY(-5px);
+                box-shadow: 0 15px 30px rgba(255,0,0,0.4);
             }}
             
             .radar-info {{
@@ -1045,97 +1037,176 @@ def home():
             .radar-badge {{
                 background: #111;
                 color: #ff0000;
+                padding: 10px 25px;
+                border-radius: 30px;
+                font-size: 0.95rem;
+                border: 1px solid #ff0000;
+                animation: pulse 2s infinite;
+            }}
+            
+            .badge-container {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin: 20px 0;
+                justify-content: center;
+            }}
+            
+            .badge-continente, .badge-palavra {{
+                background: rgba(255,0,0,0.1);
+                border: 1px solid #ff0000;
                 padding: 8px 20px;
                 border-radius: 30px;
                 font-size: 0.9rem;
-                border: 1px solid #ff0000;
+                transition: all 0.3s;
+                backdrop-filter: blur(5px);
             }}
             
-            /* SEÇÕES DE CONTEÚDO */
+            .badge-continente:hover, .badge-palavra:hover {{
+                background: #ff0000;
+                color: #000;
+                transform: scale(1.05);
+                cursor: default;
+            }}
+            
+            /* SEÇÕES PRINCIPAIS */
             .secao {{
                 max-width: 1400px;
-                margin: 50px auto;
+                margin: 60px auto;
                 padding: 0 20px;
             }}
             
             .secao-titulo {{
                 color: #ff0000;
-                font-size: 2.2rem;
-                margin-bottom: 30px;
+                font-size: 2.5rem;
+                margin-bottom: 40px;
                 display: flex;
                 align-items: center;
-                gap: 15px;
-                border-left: 5px solid #ff0000;
-                padding-left: 20px;
+                gap: 20px;
+                border-left: 6px solid #ff0000;
+                padding-left: 25px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
             }}
             
             .secao-titulo .badge {{
                 background: #ff0000;
                 color: #000;
-                padding: 5px 15px;
-                border-radius: 30px;
-                font-size: 1rem;
+                padding: 8px 25px;
+                border-radius: 40px;
+                font-size: 1.1rem;
+                font-weight: bold;
             }}
             
+            /* GRID DE DESTAQUES */
             .grid-destaques {{
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-                gap: 30px;
+                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                gap: 35px;
                 margin-top: 30px;
             }}
             
             .destaque-card {{
                 background: linear-gradient(145deg, #111 0%, #1a0000 100%);
-                border-radius: 20px;
-                padding: 30px;
+                border-radius: 25px;
+                padding: 35px;
                 position: relative;
                 border: 1px solid #333;
-                transition: all 0.3s;
+                transition: all 0.4s;
                 overflow: hidden;
                 border-left: 5px solid #ff0000;
+                border-right: 5px solid #000;
             }}
             
             .destaque-card::before {{
                 content: '🏴';
                 position: absolute;
-                bottom: -20px;
-                right: -20px;
-                font-size: 100px;
+                bottom: -30px;
+                right: -30px;
+                font-size: 120px;
                 opacity: 0.1;
                 transform: rotate(-15deg);
             }}
             
+            .destaque-card::after {{
+                content: '🔴';
+                position: absolute;
+                top: -30px;
+                left: -30px;
+                font-size: 120px;
+                opacity: 0.1;
+                transform: rotate(15deg);
+            }}
+            
             .destaque-card:hover {{
-                transform: translateY(-8px);
+                transform: translateY(-10px);
                 border-color: #ff0000;
-                box-shadow: 0 20px 40px rgba(255,0,0,0.3);
+                box-shadow: 0 30px 50px rgba(255,0,0,0.3);
             }}
             
             .destaque-tag {{
                 background: #ff0000;
                 color: #000;
-                padding: 5px 15px;
+                padding: 8px 20px;
                 border-radius: 30px;
-                font-size: 0.9rem;
+                font-size: 0.95rem;
                 font-weight: bold;
                 display: inline-block;
+                margin-bottom: 25px;
+            }}
+            
+            .destaque-header {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
                 margin-bottom: 20px;
             }}
             
-            .grid-duplo {{
+            .destaque-resumo {{
+                color: #aaa;
+                font-size: 1rem;
+                margin: 20px 0;
+                line-height: 1.7;
+            }}
+            
+            .destaque-footer {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid #333;
+                padding-top: 20px;
+                margin-top: 20px;
+            }}
+            
+            .horario-brasilia {{
+                position: absolute;
+                bottom: 15px;
+                right: 15px;
+                font-size: 0.7rem;
+                color: #444;
+                background: #0a0a0a;
+                padding: 3px 10px;
+                border-radius: 15px;
+            }}
+            
+            /* GRID PRINCIPAL DE 4 COLUNAS */
+            .grid-principal {{
                 display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 40px;
-                margin-top: 40px;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 35px;
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 0 20px;
             }}
             
             .coluna-especial {{
-                background: rgba(17, 17, 17, 0.8);
+                background: rgba(17, 17, 17, 0.9);
                 backdrop-filter: blur(10px);
                 border-radius: 30px;
-                padding: 30px;
+                padding: 35px;
                 border: 1px solid #333;
                 border-top: 4px solid #ff0000;
+                border-bottom: 4px solid #000;
             }}
             
             .coluna-titulo {{
@@ -1149,11 +1220,20 @@ def home():
                 border-bottom: 2px solid #ff0000;
             }}
             
+            .coluna-titulo .badge {{
+                background: #ff0000;
+                color: #000;
+                padding: 5px 15px;
+                border-radius: 25px;
+                font-size: 0.9rem;
+                margin-left: auto;
+            }}
+            
             .noticia {{
                 background: #111;
-                border-radius: 15px;
-                padding: 20px;
-                margin-bottom: 20px;
+                border-radius: 20px;
+                padding: 25px;
+                margin-bottom: 25px;
                 border-left: 4px solid #ff0000;
                 transition: all 0.3s;
                 position: relative;
@@ -1171,6 +1251,10 @@ def home():
             
             .noticia.internacional {{
                 border-left-color: #ffaa00;
+            }}
+            
+            .noticia.antifa {{
+                border-left-color: #ff0000;
             }}
             
             .noticia-header {{
@@ -1201,33 +1285,12 @@ def home():
             .confiabilidade {{
                 color: #ffaa00;
                 font-size: 0.8rem;
-            }}
-            
-            .categoria-badge {{
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 0.8rem;
-                font-weight: 600;
-            }}
-            
-            .categoria-badge.antifa {{
-                background: #4a0000;
-                color: #ff9999;
-            }}
-            
-            .categoria-badge.anarquista {{
-                background: #2a2a2a;
-                color: #cccccc;
-            }}
-            
-            .categoria-badge.comunista {{
-                background: #8b0000;
-                color: #ffb3b3;
+                letter-spacing: 1px;
             }}
             
             h4 {{
                 font-size: 1.1rem;
-                margin-bottom: 12px;
+                margin-bottom: 15px;
                 line-height: 1.5;
                 color: #fff;
             }}
@@ -1235,7 +1298,7 @@ def home():
             .resumo {{
                 color: #aaa;
                 font-size: 0.95rem;
-                margin-bottom: 15px;
+                margin-bottom: 20px;
                 line-height: 1.6;
             }}
             
@@ -1253,20 +1316,33 @@ def home():
                 font-size: 0.8rem;
             }}
             
-            a {{
+            .ler-link {{
+                color: #ff0000;
+                text-decoration: none;
+                font-size: 1.1rem;
+                transition: all 0.3s;
+                padding: 5px 10px;
+                border-radius: 5px;
+            }}
+            
+            .ler-link:hover {{
+                background: #ff0000;
+                color: #000;
+            }}
+            
+            .ler-mais {{
                 color: #ff0000;
                 text-decoration: none;
                 font-weight: 500;
                 transition: all 0.3s;
-                padding: 5px 12px;
-                border-radius: 5px;
-                border: 1px solid transparent;
+                padding: 8px 20px;
+                border: 1px solid #ff0000;
+                border-radius: 25px;
             }}
             
-            a:hover {{
+            .ler-mais:hover {{
                 background: #ff0000;
                 color: #000;
-                border-color: #ff0000;
             }}
             
             .mensagem-vazia {{
@@ -1275,79 +1351,31 @@ def home():
                 color: #666;
                 font-style: italic;
                 background: #111;
-                border-radius: 20px;
+                border-radius: 30px;
                 border: 2px dashed #333;
             }}
             
-            .badge-container {{
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
-                margin: 20px 0;
-                justify-content: center;
+            .loading-animation {{
+                width: 50px;
+                height: 50px;
+                border: 3px solid #333;
+                border-top-color: #ff0000;
+                border-radius: 50%;
+                animation: spin 1s infinite linear;
+                margin: 20px auto;
             }}
             
-            .contente-badge, .palavra-badge {{
-                background: #1a1a1a;
-                border: 1px solid #333;
-                padding: 6px 18px;
-                border-radius: 30px;
-                font-size: 0.9rem;
-                transition: all 0.3s;
+            @keyframes spin {{
+                to {{ transform: rotate(360deg); }}
             }}
             
-            .contente-badge:hover {{
-                background: #ff0000;
-                color: #000;
-                border-color: #ff0000;
-            }}
-            
-            .palavra-badge {{
-                background: #ff000020;
-                border-color: #ff0000;
-            }}
-            
-            /* BOTÃO RADAR */
-            .radar-button-container {{
-                text-align: center;
-                margin: 50px 0;
-            }}
-            
-            .radar-button {{
-                display: inline-block;
-                padding: 18px 50px;
-                background: linear-gradient(135deg, #000, #ff0000);
-                color: #fff;
-                font-size: 1.3rem;
-                font-weight: bold;
-                text-transform: uppercase;
-                letter-spacing: 2px;
-                border-radius: 60px;
-                border: 2px solid #ff0000;
-                transition: all 0.3s;
-                box-shadow: 0 10px 30px rgba(255,0,0,0.3);
-                animation: pulsar-botao 2s infinite;
-            }}
-            
-            .radar-button:hover {{
-                transform: scale(1.05);
-                box-shadow: 0 15px 40px rgba(255,0,0,0.6);
-                background: linear-gradient(135deg, #ff0000, #000);
-            }}
-            
-            @keyframes pulsar-botao {{
-                0% {{ box-shadow: 0 10px 30px rgba(255,0,0,0.3); }}
-                50% {{ box-shadow: 0 15px 50px rgba(255,0,0,0.8); }}
-                100% {{ box-shadow: 0 10px 30px rgba(255,0,0,0.3); }}
-            }}
-            
-            /* AGRADECIMENTO */
+            /* AGRADECIMENTO SOFISTICADO */
             .agradecimento {{
-                max-width: 800px;
-                margin: 60px auto;
-                padding: 40px;
+                max-width: 900px;
+                margin: 80px auto;
+                padding: 50px;
                 background: linear-gradient(145deg, #111, #1a0000);
-                border-radius: 30px;
+                border-radius: 50px;
                 border: 1px solid #333;
                 text-align: center;
                 position: relative;
@@ -1357,42 +1385,46 @@ def home():
             .agradecimento::before {{
                 content: '✊🏴';
                 position: absolute;
-                bottom: -20px;
-                left: -20px;
-                font-size: 120px;
+                bottom: -40px;
+                left: -40px;
+                font-size: 180px;
                 opacity: 0.1;
             }}
             
             .agradecimento::after {{
                 content: '🔴';
                 position: absolute;
-                top: -20px;
-                right: -20px;
-                font-size: 120px;
+                top: -40px;
+                right: -40px;
+                font-size: 180px;
                 opacity: 0.1;
             }}
             
             .agradecimento p {{
                 color: #ccc;
-                font-size: 1.2rem;
-                line-height: 1.8;
+                font-size: 1.3rem;
+                line-height: 1.9;
                 font-style: italic;
+                position: relative;
+                z-index: 1;
             }}
             
             .assinatura {{
                 color: #ff0000;
                 font-weight: bold;
-                margin-top: 30px;
-                font-size: 1.4rem;
-                letter-spacing: 2px;
+                margin-top: 40px;
+                font-size: 1.8rem;
+                letter-spacing: 3px;
+                position: relative;
+                z-index: 1;
             }}
             
-            /* FOOTER */
+            /* FOOTER SOFISTICADO */
             .footer {{
                 background: #000;
                 border-top: 4px solid #ff0000;
-                padding: 60px 20px 40px;
-                margin-top: 80px;
+                padding: 70px 20px 40px;
+                margin-top: 100px;
                 text-align: center;
             }}
             
@@ -1401,8 +1433,15 @@ def home():
                 justify-content: center;
                 gap: 40px;
                 flex-wrap: wrap;
-                margin-bottom: 40px;
+                margin-bottom: 50px;
                 color: #888;
+            }}
+            
+            .footer-stats span {{
+                background: #111;
+                padding: 10px 30px;
+                border-radius: 40px;
+                border: 1px solid #333;
             }}
             
             .footer-links {{
@@ -1415,10 +1454,12 @@ def home():
             
             .footer-links a {{
                 color: #666;
-                font-size: 0.9rem;
-                padding: 5px 20px;
+                text-decoration: none;
+                font-size: 0.95rem;
+                padding: 8px 25px;
                 border: 1px solid #333;
                 border-radius: 30px;
+                transition: all 0.3s;
             }}
             
             .footer-links a:hover {{
@@ -1427,9 +1468,29 @@ def home():
                 border-color: #ff0000;
             }}
             
+            .footer-copyright {{
+                color: #444;
+                font-size: 0.8rem;
+                max-width: 800px;
+                margin: 30px auto 0;
+            }}
+            
+            .footer-versao {{
+                color: #222;
+                font-size: 0.7rem;
+                margin-top: 20px;
+                letter-spacing: 2px;
+            }}
+            
             /* RESPONSIVIDADE */
+            @media (max-width: 1200px) {{
+                .grid-principal {{
+                    grid-template-columns: 1fr;
+                }}
+            }}
+            
             @media (max-width: 900px) {{
-                .grid-duplo {{
+                .grid-destaques {{
                     grid-template-columns: 1fr;
                 }}
                 
@@ -1439,6 +1500,14 @@ def home():
                     right: 0;
                     justify-content: center;
                     margin-bottom: 20px;
+                }}
+                
+                .horario-brasilia-header {{
+                    position: relative;
+                    bottom: 0;
+                    left: 0;
+                    display: inline-block;
+                    margin-top: 10px;
                 }}
             }}
             
@@ -1452,6 +1521,23 @@ def home():
                     width: 100%;
                     text-align: center;
                 }}
+                
+                .secao-titulo {{
+                    font-size: 1.8rem;
+                    flex-direction: column;
+                    align-items: flex-start;
+                }}
+            }}
+            
+            /* UTILITÁRIOS */
+            .pulse {{
+                animation: pulse 2s infinite;
+            }}
+            
+            @keyframes pulse {{
+                0% {{ opacity: 1; }}
+                50% {{ opacity: 0.7; }}
+                100% {{ opacity: 1; }}
             }}
         </style>
     </head>
@@ -1462,14 +1548,18 @@ def home():
                 <div class="bola-preta" title="Antifascismo"></div>
             </div>
             
+            <div class="horario-brasilia-header">
+                🇧🇷 {horario_brasilia()}
+            </div>
+            
             <h1>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</h1>
             <p class="subtitulo">📰 INFORMAÇÃO ANTIFASCISTA • NACIONAL & INTERNACIONAL</p>
             
             <div class="stats-supremas">
                 <span class="stat-supremo">📰 {len(noticias)} notícias</span>
-                <span class="stat-supremo">🌍 {len(continentes)} continentes</span>
-                <span class="stat-supremo">🏳️ {len(set(n.pais for n in noticias))} países</span>
-                <span class="stat-supremo">📡 {len(set(n.fonte for n in noticias))} fontes</span>
+                <span class="stat-supremo">🌍 {len(radar.estatisticas['continentes'])} continentes</span>
+                <span class="stat-supremo">🏳️ {len(radar.estatisticas['paises'])} países</span>
+                <span class="stat-supremo">📡 {radar.estatisticas['fontes_funcionando']} fontes</span>
                 <span class="stat-supremo">🔴 {len(antifa)} antifa</span>
                 <span class="stat-supremo">⚔️ {len(geopolitica)} geopolitica</span>
                 <span class="stat-supremo">🇧🇷 {len(nacionais)} nacional</span>
@@ -1479,7 +1569,8 @@ def home():
             <div class="radar-info">
                 <span class="radar-badge">🛰️ RADAR ATIVO: {radar.estatisticas['fontes_funcionando']} fontes</span>
                 <span class="radar-badge">🔤 IDIOMAS: {len(radar.estatisticas['idiomas'])}</span>
-                <span class="radar-badge">⚡ ÚLTIMA BUSCA: {datetime.now().strftime('%H:%M')}</span>
+                <span class="radar-badge">⚡ ÚLTIMA BUSCA: {hora_brasilia()}</span>
+                <span class="radar-badge">⏱️ TIMER: 5s entre fontes</span>
             </div>
             
             <div class="badge-container">
@@ -1495,22 +1586,27 @@ def home():
         <div class="secao">
             <div class="secao-titulo">
                 ⭐ DESTAQUES DO RADAR ANTIFA
-                <span class="badge">mais relevantes</span>
+                <span class="badge">{len(destaques)} destaques</span>
             </div>
-            <div class="grid-destaques">
-                {destaques_html if destaques_html else '<div class="mensagem-vazia">🛰️ Radar em operação... buscando informações antifascistas...</div>'}
+            
+            {destaques_html if destaques_html else f'''
+            <div class="mensagem-vazia">
+                <div class="loading-animation"></div>
+                <p>🛰️ Radar em operação... buscando informações antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
+                <p style="font-size: 0.9rem; margin-top: 20px;">⏱️ Aguarde 5 segundos entre cada fonte para máxima eficiência</p>
             </div>
+            '''}
         </div>
         
-        <!-- COLUNAS PRINCIPAIS -->
-        <div class="grid-duplo" style="max-width: 1400px; margin: 0 auto; padding: 0 20px;">
+        <!-- GRID PRINCIPAL DE 4 COLUNAS -->
+        <div class="grid-principal">
             <!-- COLUNA GEOPOLÍTICA -->
             <div class="coluna-especial">
                 <div class="coluna-titulo">
                     ⚔️ GEOPOLÍTICA & GUERRA
                     <span class="badge">{len(geopolitica)}</span>
                 </div>
-                {geo_html if geo_html else '<div class="mensagem-vazia">🛰️ Escaneando conflitos globais...</div>'}
+                {geo_html if geo_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>🛰️ Escaneando conflitos globais...</p></div>'}
             </div>
             
             <!-- COLUNA ANTIFA -->
@@ -1519,19 +1615,16 @@ def home():
                     🏴 MOVIMENTOS ANTIFASCISTAS
                     <span class="badge">{len(antifa)}</span>
                 </div>
-                {antifa_html if antifa_html else '<div class="mensagem-vazia">🛰️ Buscando movimentos sociais...</div>'}
+                {antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>🛰️ Buscando movimentos sociais...</p></div>'}
             </div>
-        </div>
-        
-        <!-- SEÇÃO NACIONAL vs INTERNACIONAL -->
-        <div class="grid-duplo" style="max-width: 1400px; margin: 40px auto; padding: 0 20px;">
+            
             <!-- COLUNA NACIONAL -->
             <div class="coluna-especial">
                 <div class="coluna-titulo">
                     🇧🇷 BRASIL (NACIONAL)
                     <span class="badge">{len(nacionais)}</span>
                 </div>
-                {nacional_html if nacional_html else '<div class="mensagem-vazia">🛰️ Buscando notícias nacionais...</div>'}
+                {nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>🛰️ Buscando notícias nacionais...</p></div>'}
             </div>
             
             <!-- COLUNA INTERNACIONAL -->
@@ -1540,26 +1633,23 @@ def home():
                     🌍 INTERNACIONAL
                     <span class="badge">{len(internacionais)}</span>
                 </div>
-                {internacional_html if internacional_html else '<div class="mensagem-vazia">🛰️ Buscando notícias internacionais...</div>'}
+                {internacional_html if internacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>🛰️ Buscando notícias internacionais...</p></div>'}
             </div>
-        </div>
-        
-        <!-- BOTÃO RADAR -->
-        <div class="radar-button-container">
-            <a href="/forcar-busca" class="radar-button">🛰️ ATIVAR RADAR SUPREMO</a>
         </div>
         
         <!-- AGRADECIMENTO ANTIFA -->
         <div class="agradecimento">
             <p>"A informação é nossa arma mais poderosa contra o fascismo. Agradecemos a todos os antifascistas, anarquistas, comunistas e lutadores sociais que constroem um mundo sem opressão. A luta continua!"</p>
             <div class="assinatura">✊🏴 SHARP - FRONT 16 RJ 🏴🔴</div>
-            <p style="margin-top: 20px; color: #ff0000;">"Enquanto houver fascismo, haverá antifascismo."</p>
+            <p style="margin-top: 30px; color: #ff0000; font-size: 1.1rem;">"Enquanto houver fascismo, haverá antifascismo."</p>
+            <p style="margin-top: 20px; color: #444; font-size: 0.8rem;">🇧🇷 Horário de Brasília: {horario_brasilia()}</p>
         </div>
         
         <!-- FOOTER -->
         <div class="footer">
             <div class="footer-stats">
                 <span>🛰️ Radar a cada {config.TEMPO_ATUALIZACAO} minutos</span>
+                <span>⏱️ Timer: 5 segundos entre fontes</span>
                 <span>🔗 Links originais</span>
                 <span>⚡ {len(noticias)} notícias no acervo</span>
                 <span>🏴 {radar.estatisticas['fontes_funcionando']} fontes ativas</span>
@@ -1571,121 +1661,18 @@ def home():
                 <a href="#">Contato</a>
                 <a href="#">Privacidade</a>
                 <a href="#">Manifesto</a>
+                <a href="#">🇧🇷 Horário Brasília</a>
             </div>
             
-            <p style="color: #444; font-size: 0.8rem; max-width: 800px; margin: 0 auto;">
+            <div class="footer-copyright">
                 🔴🏴 SHARP - FRONT 16 RJ • Informação Antifascista • Nacional & Internacional
-            </p>
-            <p style="color: #333; font-size: 0.7rem; margin-top: 20px;">
+            </div>
+            <div class="footer-copyright" style="color: #555;">
                 Todos os links são das fontes originais • Conteúdo sob responsabilidade de cada veículo
-            </p>
-            <p style="color: #222; font-size: 0.6rem; margin-top: 10px;">
-                v9.0 • RADAR SUPREMO ANTIFA • 40+ fontes • 5 idiomas • 3000+ notícias
-            </p>
-        </div>
-    </body>
-    </html>
-    '''
-
-# ============================================
-# FUNÇÃO PARA PEGAR BANDEIRAS
-# ============================================
-
-def get_bandeira(pais):
-    """Retorna a bandeira emoji para o país"""
-    bandeiras = {
-        'Brasil': '🇧🇷',
-        'Portugal': '🇵🇹',
-        'Argentina': '🇦🇷',
-        'México': '🇲🇽',
-        'Venezuela': '🇻🇪',
-        'USA': '🇺🇸',
-        'UK': '🇬🇧',
-        'Alemanha': '🇩🇪',
-        'França': '🇫🇷',
-        'Espanha': '🇪🇸',
-        'Itália': '🇮🇹',
-        'Canadá': '🇨🇦',
-        'Austrália': '🇦🇺',
-        'Japão': '🇯🇵',
-        'China': '🇨🇳',
-        'Índia': '🇮🇳',
-        'Israel': '🇮🇱',
-        'Qatar': '🇶🇦',
-        'Global': '🌍',
-        'África': '🌍',
-        'África do Sul': '🇿🇦',
-        'Quênia': '🇰🇪',
-        'Congo': '🇨🇩',
-        'Bélgica': '🇧🇪',
-        'Irã': '🇮🇷',
-        'Emirados': '🇦🇪',
-        'Singapura': '🇸🇬',
-        'Coreia do Sul': '🇰🇷',
-        'Hong Kong': '🇭🇰',
-        'Nova Zelândia': '🇳🇿',
-    }
-    return bandeiras.get(pais, '🏴')
-
-# ============================================
-# ROTA PARA FORÇAR BUSCA SUPREMA
-# ============================================
-
-@app.route('/forcar-busca')
-def forcar_busca():
-    import threading
-    def busca_suprema():
-        buscar_noticias_supremo()
-    threading.Thread(target=busca_suprema).start()
-    return '''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>🔴🏴 RADAR SUPREMO ATIVADO</title>
-        <style>
-            body { 
-                background: black; 
-                color: white; 
-                font-family: 'Inter', Arial; 
-                text-align: center; 
-                padding: 50px; 
-                background: linear-gradient(135deg, #000, #1a0000);
-            }
-            h1 { color: red; font-size: 3em; text-shadow: 2px 2px 0px black; }
-            .info { 
-                background: #111; 
-                padding: 30px; 
-                border-radius: 20px; 
-                margin: 20px auto;
-                max-width: 600px;
-                border-left: 5px solid red;
-                border-right: 5px solid black;
-            }
-            .bola { 
-                width: 100px; 
-                height: 100px; 
-                background: red; 
-                border-radius: 50%; 
-                margin: 20px auto;
-                box-shadow: 0 0 50px red;
-                animation: pulsar 2s infinite;
-            }
-            @keyframes pulsar {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.1); box-shadow: 0 0 80px red; }
-                100% { transform: scale(1); }
-            }
-            a { color: red; text-decoration: none; font-size: 1.2em; }
-        </style>
-    </head>
-    <body>
-        <div class="bola"></div>
-        <h1>🔴🏴 RADAR SUPREMO ATIVADO!</h1>
-        <div class="info">
-            <h2 style="color: red;">🛰️ O RADAR ESTÁ VARRENDO O MUNDO</h2>
-            <p style="font-size: 1.2em;">As notícias antifascistas estão sendo coletadas agora em 40+ fontes e 5 idiomas.</p>
-            <p style="color: #888;">Aguarde 2-3 minutos e atualize a página.</p>
-            <p style="margin-top: 30px;"><a href="/">⬅️ VOLTAR AO RADAR</a></p>
+            </div>
+            <div class="footer-versao">
+                v10.0 • RADAR SUPREMO ANTIFA • Timer 5s • Horário Brasília • {len(FONTES_CONFIAVEIS)} fontes • {sum(len(p) for p in PALAVRAS_CHAVE.values())} palavras-chave
+            </div>
         </div>
     </body>
     </html>
@@ -1697,7 +1684,7 @@ def forcar_busca():
 
 @app.route('/api/stats')
 def api_stats():
-    noticias = carregar_noticias()
+    noticias = radar._carregar_noticias()
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
     antifa = [n for n in noticias if n.categoria in ['antifa', 'anarquista', 'comunista']]
     nacionais = [n for n in noticias if n.pais == 'Brasil']
@@ -1709,46 +1696,69 @@ def api_stats():
         'antifa': len(antifa),
         'nacional': len(nacionais),
         'internacional': len(internacionais),
-        'paises': len(set(n.pais for n in noticias)),
-        'continentes': len(set(n.continente for n in noticias)),
-        'fontes': len(set(n.fonte for n in noticias)),
-        'idiomas': len(set(n.idioma for n in noticias)),
-        'ultima_atualizacao': datetime.now().isoformat(),
-        'estatisticas_radar': {
-            'fontes_ativas': radar.estatisticas['fontes_funcionando'],
-            'palavras_mais_usadas': dict(radar.estatisticas['palavras_mais_usadas'].most_common(20)),
-        }
+        'paises': len(radar.estatisticas['paises']),
+        'continentes': len(radar.estatisticas['continentes']),
+        'fontes_ativas': radar.estatisticas['fontes_funcionando'],
+        'fontes_nacionais': radar.estatisticas['fontes_por_prioridade'][1],
+        'idiomas': len(radar.estatisticas['idiomas']),
+        'ultima_atualizacao': horario_brasilia(),
+        'hora_brasilia': hora_brasilia(),
+        'timer_segundos': config.DELAY_ENTRE_REQUISICOES,
     })
+
+# ============================================
+# ROTA PARA DIAGNÓSTICO (OPCIONAL)
+# ============================================
+
+@app.route('/diagnostico')
+def diagnostico():
+    return f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🔴🏴 Diagnóstico do Radar</title>
+        <style>
+            body {{ background: black; color: white; font-family: monospace; padding: 20px; }}
+            h1 {{ color: red; }}
+            .info {{ background: #111; padding: 15px; margin: 10px 0; border-left: 3px solid red; }}
+        </style>
+    </head>
+    <body>
+        <h1>🔴🏴 RADAR SUPREMO - DIAGNÓSTICO</h1>
+        <div class="info">⏱️ Horário Brasília: {horario_brasilia()}</div>
+        <div class="info">⏱️ Timer entre fontes: {config.DELAY_ENTRE_REQUISICOES} segundos</div>
+        <div class="info">📡 Fontes configuradas: {len(FONTES_CONFIAVEIS)}</div>
+        <div class="info">🔤 Palavras-chave: {sum(len(p) for p in PALAVRAS_CHAVE.values())}</div>
+        <div class="info">🔴 Fontes nacionais (prioridade 1): {radar.estatisticas['fontes_por_prioridade'][1]}</div>
+        <div class="info">🌎 Fontes internacionais (prioridade 2-3): {radar.estatisticas['fontes_por_prioridade'][2] + radar.estatisticas['fontes_por_prioridade'][3]}</div>
+        <div class="info">📊 Estatísticas do radar: {json.dumps(dict(radar.estatisticas['fontes_por_prioridade']), indent=2)}</div>
+    </body>
+    </html>
+    '''
 
 # ============================================
 # INICIALIZAÇÃO SUPREMA
 # ============================================
 
 def inicializar_supremo():
-    """Inicializa o sistema supremo"""
-    logger.info("="*60)
-    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR SUPREMO ANTIFA v9.0")
-    logger.info("="*60)
+    """Inicializa o sistema supremo com radar automático"""
+    logger.info("="*70)
+    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR SUPREMO ANTIFA v10.0 FINAL")
+    logger.info("="*70)
     
-    cache = carregar_cache()
-    noticias = carregar_noticias()
+    # Carrega cache
+    cache = {}
+    noticias = radar._carregar_noticias()
     logger.info(f"📊 Acervo inicial: {len(noticias)} notícias")
     logger.info(f"🌍 Fontes configuradas: {len(FONTES_CONFIAVEIS)}")
     logger.info(f"🔤 Palavras-chave: {sum(len(p) for p in PALAVRAS_CHAVE.values())} em {len(PALAVRAS_CHAVE)} idiomas")
+    logger.info(f"⏱️ Timer entre fontes: {config.DELAY_ENTRE_REQUISICOES} segundos")
+    logger.info(f"🇧🇷 Horário de Brasília: {horario_brasilia()}")
     
-    # Busca inicial em background
-    def busca_background():
-        time.sleep(5)
-        logger.info("🚀 Iniciando radar supremo automático...")
-        try:
-            buscar_noticias_supremo()
-        except Exception as e:
-            logger.error(f"❌ Erro na busca: {e}")
-    
-    thread = threading.Thread(target=busca_background, daemon=True)
-    thread.start()
-    logger.info("✅🏴 RADAR SUPREMO ATIVADO - 40+ THREADS SIMULTÂNEAS")
-    logger.info("="*60)
+    # INICIA O RADAR AUTOMATICAMENTE (SEM BOTÃO)
+    radar.iniciar_radar_automatico()
+    logger.info("✅🏴 RADAR SUPREMO ATIVADO AUTOMATICAMENTE - 5 SEGUNDOS ENTRE FONTES")
+    logger.info("="*70)
 
 inicializar_supremo()
 
