@@ -3,13 +3,13 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    🔴🏴 SHARP - FRONT 16 RJ 🏴🔴                          ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 10.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 11.0 - ULTIMATE                 ║
 ║         RADAR AUTOMATICO COM TIMER DE 5 SEGUNDOS - HORARIO DE BRASILIA       ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from datetime import datetime, timedelta
 import os
 import random
@@ -65,7 +65,6 @@ class Config:
     MAX_NOTICIAS_TOTAL = 3000
     MAX_TRABALHADORES = 10
     MAX_TENTATIVAS = 2
-    MAX_PALAVRAS_POR_BUSCA = 8
     
     # Headers para parecer navegador real
     HEADERS = {
@@ -110,6 +109,18 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger('ANTIFA-RADAR')
+
+# ============================================
+# PALAVRAS PROIBIDAS (FILTRO DE CASINO E SPAM)
+# ============================================
+
+PALAVRAS_PROIBIDAS = [
+    'casino', 'cassino', 'bet', 'aposta', 'gambling', 'poker', 'slot',
+    'roulette', 'blackjack', 'baccarat', 'vegas', 'lottery', 'sweepstakes',
+    'crypto', 'bitcoin', 'investimento', 'renda extra', 'ganhe dinheiro',
+    'milagroso', 'segredo', 'fórmula', 'curso', 'download', 'gratis',
+    'sexo', 'porn', 'onlyfans', 'hot', 'universitario', 'trabalhe em casa'
+]
 
 # ============================================
 # SISTEMA DE PROXY INTELIGENTE
@@ -282,6 +293,17 @@ class RadarAutomatico:
                             if entrada.link in links_antigos:
                                 continue
                             
+                            # FILTRO ANTI-CASINO
+                            titulo_lower = entrada.title.lower()
+                            palavra_proibida = False
+                            for palavra in PALAVRAS_PROIBIDAS:
+                                if palavra in titulo_lower:
+                                    palavra_proibida = True
+                                    break
+                            
+                            if palavra_proibida:
+                                continue
+                            
                             noticia = self._criar_noticia(fonte, entrada)
                             if noticia:
                                 noticias_fonte.append(noticia)
@@ -379,28 +401,32 @@ class RadarAutomatico:
 radar = RadarAutomatico()
 
 # ============================================
-# FUNCAO PARA BANDEIRA EM TEXTO
+# FUNCAO PARA BANDEIRA
 # ============================================
 
 def get_bandeira(pais):
-    """Retorna texto representando o pais"""
+    """Retorna a bandeira do pais"""
     bandeiras = {
-        'Brasil': '[BR]',
-        'Portugal': '[PT]',
-        'Argentina': '[AR]',
-        'Mexico': '[MX]',
-        'Venezuela': '[VE]',
-        'USA': '[US]',
-        'UK': '[UK]',
-        'Qatar': '[QA]',
-        'Global': '[GL]',
+        'Brasil': '🇧🇷',
+        'Portugal': '🇵🇹',
+        'Argentina': '🇦🇷',
+        'Mexico': '🇲🇽',
+        'Venezuela': '🇻🇪',
+        'USA': '🇺🇸',
+        'UK': '🇬🇧',
+        'Qatar': '🇶🇦',
+        'Global': '🌍',
+        'Oriente Medio': '🕌',
+        'Europa': '🇪🇺',
+        'America do Sul': '🌎',
+        'America do Norte': '🌎',
     }
-    return bandeiras.get(pais, '[?]')
+    return bandeiras.get(pais, '🏴')
 
 app = Flask(__name__)
 
 # ============================================
-# PAGINA PRINCIPAL - COM DUAS BOLAS
+# PAGINA PRINCIPAL - DESIGN SOFISTICADO
 # ============================================
 
 @app.route('/')
@@ -420,13 +446,15 @@ def home():
         bandeira = get_bandeira(n.pais)
         destaques_html += f'''
         <div class="destaque-card">
-            <span class="destaque-tag">[Destaque]</span>
-            <span class="fonte">{bandeira} {n.fonte}</span>
+            <span class="destaque-tag">⭐ DESTAQUE</span>
+            <div class="destaque-header">
+                <span class="fonte">{bandeira} {n.fonte}</span>
+            </div>
             <h3>{n.titulo}</h3>
-            <p>{n.resumo[:150]}...</p>
+            <p class="resumo">{n.resumo[:150]}...</p>
             <div class="destaque-footer">
-                <span class="data">[Hora] {n.data[:16]}</span>
-                <a href="{n.link}" target="_blank">Ler mais</a>
+                <span class="data">🕒 {n.data[:16]}</span>
+                <a href="{n.link}" target="_blank" class="botao">Ler mais →</a>
             </div>
         </div>
         '''
@@ -438,83 +466,104 @@ def home():
         destaques_conteudo = f'''
         <div class="mensagem-vazia">
             <div class="loading-animation"></div>
-            <p>[Radar] em operacao... buscando informacoes em {len(FONTES_CONFIAVEIS)} fontes</p>
-            <p>[Timer] 5 segundos entre cada fonte</p>
+            <p>🔍 Radar em operacao... buscando informacoes em {len(FONTES_CONFIAVEIS)} fontes</p>
+            <p>⏱️ Timer: 5 segundos entre cada fonte</p>
         </div>
         '''
     
     # HTML Geopolitica
     geo_html = ''
-    for n in geopolitica[:10]:
+    for n in geopolitica[:12]:
         bandeira = get_bandeira(n.pais)
         geo_html += f'''
         <div class="noticia">
-            <span class="fonte">{bandeira} {n.fonte}</span>
+            <div class="noticia-header">
+                <span class="fonte">{bandeira} {n.fonte}</span>
+                <span class="pais">[{n.pais}]</span>
+            </div>
             <h4>{n.titulo}</h4>
-            <p class="resumo">{n.resumo[:100]}...</p>
+            <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
                 <span class="data">{n.data[:10]}</span>
-                <a href="{n.link}" target="_blank">Link</a>
+                <a href="{n.link}" target="_blank" class="link">🔗</a>
             </div>
         </div>
         '''
     
     # HTML Antifa
     antifa_html = ''
-    for n in antifa[:10]:
+    for n in antifa[:12]:
         bandeira = get_bandeira(n.pais)
         antifa_html += f'''
-        <div class="noticia">
-            <span class="fonte">{bandeira} {n.fonte}</span>
+        <div class="noticia antifa">
+            <div class="noticia-header">
+                <span class="fonte">{bandeira} {n.fonte}</span>
+                <span class="pais">[{n.pais}]</span>
+            </div>
             <h4>{n.titulo}</h4>
-            <p class="resumo">{n.resumo[:100]}...</p>
+            <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
                 <span class="data">{n.data[:10]}</span>
-                <a href="{n.link}" target="_blank">Link</a>
+                <a href="{n.link}" target="_blank" class="link">🔗</a>
             </div>
         </div>
         '''
     
     # HTML Nacionais
     nacional_html = ''
-    for n in nacionais[:10]:
+    for n in nacionais[:12]:
         bandeira = get_bandeira(n.pais)
         nacional_html += f'''
         <div class="noticia nacional">
-            <span class="fonte">{bandeira} {n.fonte}</span>
+            <div class="noticia-header">
+                <span class="fonte">{bandeira} {n.fonte}</span>
+                <span class="pais">[{n.pais}]</span>
+            </div>
             <h4>{n.titulo}</h4>
-            <p class="resumo">{n.resumo[:100]}...</p>
+            <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
                 <span class="data">{n.data[:10]}</span>
-                <a href="{n.link}" target="_blank">Link</a>
+                <a href="{n.link}" target="_blank" class="link">🔗</a>
             </div>
         </div>
         '''
     
     # HTML Internacionais
     internacional_html = ''
-    for n in internacionais[:10]:
+    for n in internacionais[:12]:
         bandeira = get_bandeira(n.pais)
         internacional_html += f'''
         <div class="noticia internacional">
-            <span class="fonte">{bandeira} {n.fonte}</span>
+            <div class="noticia-header">
+                <span class="fonte">{bandeira} {n.fonte}</span>
+                <span class="pais">[{n.pais}]</span>
+            </div>
             <h4>{n.titulo}</h4>
-            <p class="resumo">{n.resumo[:100]}...</p>
+            <p class="resumo">{n.resumo[:120]}...</p>
             <div class="noticia-footer">
                 <span class="data">{n.data[:10]}</span>
-                <a href="{n.link}" target="_blank">Link</a>
+                <a href="{n.link}" target="_blank" class="link">🔗</a>
             </div>
         </div>
         '''
     
+    # HTML do mapa de continentes
+    continentes_html = ''
+    for cont in radar.estatisticas['continentes']:
+        continentes_html += f'<span class="tag">{cont}</span>'
+    
     return f'''
     <!DOCTYPE html>
-    <html>
+    <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Informação antifascista - Nacional e Internacional">
+        <meta name="keywords" content="antifa, antifascista, notícias, brasil, mundo, geopolítica">
+        <meta name="author" content="SHARP - FRONT 16 RJ">
         <title>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</title>
         <style>
+            /* RESET E ESTILOS GLOBAIS */
             * {{
                 margin: 0;
                 padding: 0;
@@ -522,69 +571,158 @@ def home():
             }}
             
             body {{
-                font-family: Arial, sans-serif;
+                font-family: 'Segoe UI', Roboto, Arial, sans-serif;
                 background: #0a0a0a;
                 color: #e0e0e0;
                 line-height: 1.6;
             }}
             
-            /* HEADER COM DUAS BOLAS */
+            /* HEADER COM DUAS BOLAS ANIMADAS */
             .header {{
-                background: linear-gradient(135deg, #000 0%, #1a0000 100%);
+                background: linear-gradient(135deg, #000000 0%, #2a0000 70%, #000000 100%);
                 border-bottom: 4px solid #ff0000;
-                padding: 30px 20px;
+                padding: 40px 20px 50px;
                 text-align: center;
                 position: relative;
                 overflow: hidden;
+                box-shadow: 0 10px 30px rgba(255,0,0,0.3);
+            }}
+            
+            .header::before {{
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 15px,
+                    rgba(255,0,0,0.03) 15px,
+                    rgba(255,0,0,0.03) 30px
+                );
+                animation: moveStripes 30s linear infinite;
+            }}
+            
+            @keyframes moveStripes {{
+                0% {{ transform: translateX(0) translateY(0); }}
+                100% {{ transform: translateX(50%) translateY(50%); }}
             }}
             
             .bolas-container {{
                 position: absolute;
-                top: 20px;
-                right: 30px;
+                top: 25px;
+                right: 40px;
                 display: flex;
-                gap: 20px;
+                gap: 25px;
+                z-index: 10;
             }}
             
             .bola-vermelha {{
-                width: 70px;
-                height: 70px;
+                width: 80px;
+                height: 80px;
                 background: #ff0000;
                 border-radius: 50%;
-                box-shadow: 0 0 40px rgba(255,0,0,0.8);
-                animation: pulsar 2s infinite;
+                box-shadow: 0 0 50px rgba(255,0,0,0.8);
+                animation: pulsarVermelha 2.5s infinite ease-in-out, flutuar 4s infinite ease-in-out;
             }}
             
             .bola-preta {{
-                width: 70px;
-                height: 70px;
+                width: 80px;
+                height: 80px;
                 background: #000;
                 border-radius: 50%;
                 border: 3px solid #ff0000;
-                box-shadow: 0 0 40px rgba(255,0,0,0.5);
-                animation: pulsar 2.5s infinite;
+                box-shadow: 0 0 50px rgba(255,0,0,0.5);
+                animation: pulsarPreta 3s infinite ease-in-out, flutuar 4s infinite ease-in-out 0.5s;
             }}
             
-            @keyframes pulsar {{
-                0% {{ transform: scale(1); }}
-                50% {{ transform: scale(1.1); }}
-                100% {{ transform: scale(1); }}
+            @keyframes pulsarVermelha {{
+                0% {{ transform: scale(1); box-shadow: 0 0 50px rgba(255,0,0,0.8); }}
+                50% {{ transform: scale(1.1); box-shadow: 0 0 80px rgba(255,0,0,1); }}
+                100% {{ transform: scale(1); box-shadow: 0 0 50px rgba(255,0,0,0.8); }}
+            }}
+            
+            @keyframes pulsarPreta {{
+                0% {{ transform: scale(1); box-shadow: 0 0 40px rgba(255,0,0,0.4); }}
+                50% {{ transform: scale(1.05); box-shadow: 0 0 70px rgba(255,0,0,0.8); }}
+                100% {{ transform: scale(1); box-shadow: 0 0 40px rgba(255,0,0,0.4); }}
+            }}
+            
+            @keyframes flutuar {{
+                0% {{ transform: translateY(0); }}
+                50% {{ transform: translateY(-10px); }}
+                100% {{ transform: translateY(0); }}
             }}
             
             h1 {{
                 color: #ff0000;
-                font-size: 2.5rem;
+                font-size: clamp(2.5rem, 7vw, 4rem);
+                font-weight: 900;
+                letter-spacing: 4px;
                 margin-bottom: 10px;
-                text-shadow: 2px 2px 0 #000;
+                text-shadow: 3px 3px 0px #000, 0 0 30px rgba(255,0,0,0.5);
+                position: relative;
+                z-index: 1;
             }}
             
-            .horario {{
+            .subtitulo {{
+                color: #ccc;
+                font-size: 1.2rem;
+                margin-bottom: 20px;
+                position: relative;
+                z-index: 1;
+                font-style: italic;
+                border-bottom: 1px solid #ff0000;
+                display: inline-block;
+                padding-bottom: 8px;
+            }}
+            
+            .horario-header {{
+                position: absolute;
+                bottom: 15px;
+                left: 30px;
                 color: #888;
                 font-size: 0.9rem;
-                margin-top: 10px;
+                background: rgba(0,0,0,0.7);
+                padding: 5px 15px;
+                border-radius: 30px;
+                border: 1px solid #ff0000;
+                z-index: 10;
             }}
             
-            .stats {{
+            /* STATS BAR */
+            .stats-container {{
+                display: flex;
+                justify-content: center;
+                gap: 15px;
+                flex-wrap: wrap;
+                margin: 25px 0;
+                position: relative;
+                z-index: 1;
+            }}
+            
+            .stat-item {{
+                background: rgba(0,0,0,0.7);
+                backdrop-filter: blur(10px);
+                border: 1px solid #ff0000;
+                padding: 8px 20px;
+                border-radius: 40px;
+                font-size: 0.95rem;
+                font-weight: 500;
+                transition: all 0.3s;
+                box-shadow: 0 3px 10px rgba(255,0,0,0.2);
+            }}
+            
+            .stat-item:hover {{
+                background: #ff0000;
+                color: #000;
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(255,0,0,0.4);
+            }}
+            
+            .radar-info {{
                 display: flex;
                 justify-content: center;
                 gap: 15px;
@@ -592,104 +730,218 @@ def home():
                 margin: 20px 0;
             }}
             
-            .stat {{
+            .radar-badge {{
                 background: #111;
-                border: 1px solid #ff0000;
-                padding: 8px 20px;
+                color: #ff0000;
+                padding: 6px 18px;
                 border-radius: 30px;
                 font-size: 0.9rem;
+                border: 1px solid #ff0000;
             }}
             
-            .grid {{
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 30px;
+            .tag-container {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin: 20px 0;
+                justify-content: center;
+            }}
+            
+            .tag {{
+                background: rgba(255,0,0,0.1);
+                border: 1px solid #ff0000;
+                padding: 5px 15px;
+                border-radius: 30px;
+                font-size: 0.85rem;
+            }}
+            
+            /* SEÇÃO DE DESTAQUES */
+            .secao {{
                 max-width: 1400px;
-                margin: 30px auto;
+                margin: 50px auto;
                 padding: 0 20px;
             }}
             
-            .coluna {{
-                background: #111;
-                border-radius: 15px;
-                padding: 25px;
-                border-top: 3px solid #ff0000;
-            }}
-            
-            .coluna h2 {{
+            .secao-titulo {{
                 color: #ff0000;
-                font-size: 1.5rem;
-                margin-bottom: 20px;
-                border-bottom: 1px solid #333;
-                padding-bottom: 10px;
+                font-size: 2.2rem;
+                margin-bottom: 30px;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                border-left: 5px solid #ff0000;
+                padding-left: 20px;
             }}
             
-            .destaques {{
-                max-width: 1400px;
-                margin: 30px auto;
-                padding: 0 20px;
-            }}
-            
-            .destaques h2 {{
-                color: #ff0000;
-                font-size: 2rem;
-                margin-bottom: 20px;
+            .secao-titulo .badge {{
+                background: #ff0000;
+                color: #000;
+                padding: 5px 15px;
+                border-radius: 30px;
+                font-size: 1rem;
             }}
             
             .destaques-grid {{
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 20px;
+                grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                gap: 30px;
             }}
             
             .destaque-card {{
-                background: #1a1a1a;
+                background: linear-gradient(145deg, #111, #1a0000);
+                border-radius: 20px;
+                padding: 25px;
+                position: relative;
+                border: 1px solid #333;
+                transition: all 0.4s;
+                overflow: hidden;
                 border-left: 4px solid #ff0000;
-                padding: 20px;
-                border-radius: 10px;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            }}
+            
+            .destaque-card::before {{
+                content: '✊';
+                position: absolute;
+                bottom: -20px;
+                right: -20px;
+                font-size: 80px;
+                opacity: 0.1;
+                transform: rotate(-10deg);
+            }}
+            
+            .destaque-card:hover {{
+                transform: translateY(-8px);
+                box-shadow: 0 20px 30px rgba(255,0,0,0.3);
             }}
             
             .destaque-tag {{
                 background: #ff0000;
                 color: #000;
-                padding: 3px 10px;
-                border-radius: 15px;
+                padding: 4px 12px;
+                border-radius: 20px;
                 font-size: 0.8rem;
+                font-weight: bold;
                 display: inline-block;
-                margin-bottom: 10px;
+                margin-bottom: 15px;
+            }}
+            
+            .destaque-header {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+            }}
+            
+            .destaque-footer {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid #333;
+                padding-top: 15px;
+                margin-top: 15px;
+            }}
+            
+            /* GRID PRINCIPAL */
+            .grid-principal {{
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 30px;
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 0 20px;
+            }}
+            
+            .coluna {{
+                background: rgba(17, 17, 17, 0.9);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 25px;
+                border: 1px solid #333;
+                border-top: 3px solid #ff0000;
+            }}
+            
+            .coluna h2 {{
+                color: #ff0000;
+                font-size: 1.8rem;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #ff0000;
+            }}
+            
+            .coluna h2 .badge {{
+                background: #ff0000;
+                color: #000;
+                padding: 3px 12px;
+                border-radius: 20px;
+                font-size: 0.9rem;
+                margin-left: auto;
             }}
             
             .noticia {{
+                background: #111;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 20px;
+                border-left: 4px solid #ff0000;
+                transition: all 0.3s;
+            }}
+            
+            .noticia:hover {{
+                transform: translateX(5px);
                 background: #1a1a1a;
-                border-left: 3px solid #ff0000;
-                padding: 15px;
-                margin-bottom: 15px;
-                border-radius: 5px;
             }}
             
             .noticia.nacional {{
-                border-left-color: #00ff00;
+                border-left-color: #00cc00;
             }}
             
             .noticia.internacional {{
                 border-left-color: #ffaa00;
             }}
             
+            .noticia.antifa {{
+                border-left-color: #ff0000;
+            }}
+            
+            .noticia-header {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+                font-size: 0.9rem;
+                flex-wrap: wrap;
+                gap: 8px;
+            }}
+            
             .fonte {{
                 color: #ff0000;
                 font-weight: bold;
-                font-size: 0.9rem;
+                text-transform: uppercase;
+                font-size: 0.85rem;
+            }}
+            
+            .pais {{
+                color: #888;
+                background: #1a1a1a;
+                padding: 2px 10px;
+                border-radius: 15px;
+                font-size: 0.75rem;
             }}
             
             h4 {{
-                margin: 10px 0;
                 font-size: 1rem;
+                margin-bottom: 12px;
+                line-height: 1.5;
+                color: #fff;
             }}
             
             .resumo {{
                 color: #aaa;
                 font-size: 0.9rem;
-                margin: 10px 0;
+                margin-bottom: 15px;
             }}
             
             .noticia-footer {{
@@ -697,26 +949,46 @@ def home():
                 justify-content: space-between;
                 align-items: center;
                 border-top: 1px solid #333;
-                padding-top: 10px;
-                margin-top: 10px;
+                padding-top: 12px;
+                margin-top: 12px;
+            }}
+            
+            .data {{
+                color: #666;
                 font-size: 0.8rem;
             }}
             
-            a {{
+            .link, .botao {{
                 color: #ff0000;
                 text-decoration: none;
+                transition: all 0.3s;
+                padding: 4px 8px;
+                border-radius: 4px;
             }}
             
-            a:hover {{
-                text-decoration: underline;
+            .link:hover, .botao:hover {{
+                background: #ff0000;
+                color: #000;
+            }}
+            
+            .botao {{
+                border: 1px solid #ff0000;
+                padding: 5px 15px;
+                border-radius: 20px;
+            }}
+            
+            .botao:hover {{
+                background: #ff0000;
+                color: #000;
             }}
             
             .mensagem-vazia {{
                 text-align: center;
-                padding: 50px;
+                padding: 60px 20px;
                 color: #666;
                 background: #111;
-                border-radius: 10px;
+                border-radius: 15px;
+                border: 1px dashed #333;
             }}
             
             .loading-animation {{
@@ -733,19 +1005,66 @@ def home():
                 to {{ transform: rotate(360deg); }}
             }}
             
+            /* RODAPÉ */
             .footer {{
                 background: #000;
-                border-top: 3px solid #ff0000;
-                padding: 30px;
+                border-top: 4px solid #ff0000;
+                padding: 40px 20px 30px;
+                margin-top: 60px;
                 text-align: center;
-                margin-top: 50px;
-                color: #666;
             }}
             
-            @media (max-width: 900px) {{
-                .grid {{
+            .footer-stats {{
+                display: flex;
+                justify-content: center;
+                gap: 25px;
+                flex-wrap: wrap;
+                margin-bottom: 30px;
+                color: #888;
+            }}
+            
+            .footer-links {{
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+                margin-bottom: 25px;
+                flex-wrap: wrap;
+            }}
+            
+            .footer-links a {{
+                color: #666;
+                text-decoration: none;
+                font-size: 0.9rem;
+                padding: 5px 15px;
+                border: 1px solid #333;
+                border-radius: 30px;
+            }}
+            
+            .footer-links a:hover {{
+                background: #ff0000;
+                color: #000;
+                border-color: #ff0000;
+            }}
+            
+            .footer-copyright {{
+                color: #444;
+                font-size: 0.8rem;
+            }}
+            
+            .footer-versao {{
+                color: #222;
+                font-size: 0.7rem;
+                margin-top: 15px;
+            }}
+            
+            /* RESPONSIVIDADE */
+            @media (max-width: 1000px) {{
+                .grid-principal {{
                     grid-template-columns: 1fr;
                 }}
+            }}
+            
+            @media (max-width: 700px) {{
                 .bolas-container {{
                     position: relative;
                     top: 0;
@@ -753,83 +1072,250 @@ def home():
                     justify-content: center;
                     margin-bottom: 20px;
                 }}
+                
+                .horario-header {{
+                    position: relative;
+                    bottom: 0;
+                    left: 0;
+                    display: inline-block;
+                    margin-top: 10px;
+                }}
+            }}
+            
+            @media (max-width: 500px) {{
+                .stats-container {{
+                    flex-direction: column;
+                    align-items: center;
+                }}
+                
+                .stat-item {{
+                    width: 100%;
+                    text-align: center;
+                }}
             }}
         </style>
     </head>
     <body>
         <div class="header">
             <div class="bolas-container">
-                <div class="bola-vermelha"></div>
-                <div class="bola-preta"></div>
+                <div class="bola-vermelha" title="Luta e Resistência"></div>
+                <div class="bola-preta" title="Antifascismo"></div>
+            </div>
+            
+            <div class="horario-header">
+                🇧🇷 {horario_brasilia()} | ⏱️ Timer: 5s
             </div>
             
             <h1>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</h1>
-            <p>Informação Antifascista • Nacional & Internacional</p>
+            <p class="subtitulo">Informação Antifascista • Nacional & Internacional</p>
             
-            <div class="stats">
-                <span class="stat">📰 {len(noticias)} notícias</span>
-                <span class="stat">🌍 {len(radar.estatisticas['continentes'])} continentes</span>
-                <span class="stat">📡 {radar.estatisticas['fontes_funcionando']} fontes</span>
-                <span class="stat">🇧🇷 {len(nacionais)} nacionais</span>
-                <span class="stat">🌎 {len(internacionais)} internacionais</span>
+            <div class="stats-container">
+                <span class="stat-item">📰 {len(noticias)} notícias</span>
+                <span class="stat-item">🌍 {len(radar.estatisticas['continentes'])} continentes</span>
+                <span class="stat-item">📡 {radar.estatisticas['fontes_funcionando']} fontes</span>
+                <span class="stat-item">🇧🇷 {len(nacionais)} nacionais</span>
+                <span class="stat-item">🌎 {len(internacionais)} internacionais</span>
+                <span class="stat-item">⚔️ {len(geopolitica)} conflitos</span>
+                <span class="stat-item">🏴 {len(antifa)} antifa</span>
             </div>
             
-            <div class="horario">[BR] {horario_brasilia()} | Timer: 5s entre fontes</div>
+            <div class="radar-info">
+                <span class="radar-badge">🛸 Radar ativo</span>
+                <span class="radar-badge">⏱️ 5s entre fontes</span>
+                <span class="radar-badge">🔤 Filtro anti-casino ativo</span>
+            </div>
+            
+            <div class="tag-container">
+                {continentes_html}
+            </div>
         </div>
         
-        <div class="destaques">
-            <h2>[Destaques]</h2>
+        <!-- DESTAQUES -->
+        <div class="secao">
+            <div class="secao-titulo">
+                ⭐ DESTAQUES DO RADAR
+                <span class="badge">{len(destaques)} destaques</span>
+            </div>
+            
             <div class="destaques-grid">
                 {destaques_conteudo}
             </div>
         </div>
         
-        <div class="grid">
+        <!-- GRID PRINCIPAL -->
+        <div class="grid-principal">
+            <!-- COLUNA GEOPOLÍTICA -->
             <div class="coluna">
-                <h2>⚔️ Geopolítica</h2>
-                {geo_html if geo_html else '<div class="mensagem-vazia">Buscando...</div>'}
+                <h2>
+                    ⚔️ Geopolítica
+                    <span class="badge">{len(geopolitica)}</span>
+                </h2>
+                {geo_html if geo_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando conflitos...</p></div>'}
             </div>
+            
+            <!-- COLUNA ANTIFA -->
             <div class="coluna">
-                <h2>🏴 Antifa</h2>
-                {antifa_html if antifa_html else '<div class="mensagem-vazia">Buscando...</div>'}
+                <h2>
+                    🏴 Antifa
+                    <span class="badge">{len(antifa)}</span>
+                </h2>
+                {antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando movimentos...</p></div>'}
             </div>
+            
+            <!-- COLUNA NACIONAL -->
             <div class="coluna">
-                <h2>🇧🇷 Nacional</h2>
-                {nacional_html if nacional_html else '<div class="mensagem-vazia">Buscando...</div>'}
+                <h2>
+                    🇧🇷 Nacional
+                    <span class="badge">{len(nacionais)}</span>
+                </h2>
+                {nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias nacionais...</p></div>'}
             </div>
+            
+            <!-- COLUNA INTERNACIONAL -->
             <div class="coluna">
-                <h2>🌎 Internacional</h2>
-                {internacional_html if internacional_html else '<div class="mensagem-vazia">Buscando...</div>'}
+                <h2>
+                    🌎 Internacional
+                    <span class="badge">{len(internacionais)}</span>
+                </h2>
+                {internacional_html if internacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias internacionais...</p></div>'}
             </div>
         </div>
         
+        <!-- RODAPÉ -->
         <div class="footer">
-            <p>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</p>
-            <p style="font-size: 0.8rem; margin-top: 10px;">Radar ativo • Timer 5s • Horário Brasília</p>
+            <div class="footer-stats">
+                <span>🛸 Radar ativo</span>
+                <span>⏱️ Timer 5s</span>
+                <span>📡 {radar.estatisticas['fontes_funcionando']} fontes ativas</span>
+                <span>🔤 Filtro anti-casino</span>
+                <span>🇧🇷 Horário Brasília</span>
+            </div>
+            
+            <div class="footer-links">
+                <a href="#">Sobre</a>
+                <a href="#">Fontes</a>
+                <a href="#">Contato</a>
+                <a href="#">Manifesto</a>
+                <a href="/stats">📊 Estatísticas</a>
+            </div>
+            
+            <div class="footer-copyright">
+                🔴🏴 SHARP - FRONT 16 RJ 🏴🔴 • Informação Antifascista
+            </div>
+            <div class="footer-copyright" style="color: #555;">
+                Todos os links são das fontes originais
+            </div>
+            <div class="footer-versao">
+                v11.0 • Radar Anti-Casino • Timer 5s • {len(FONTES_CONFIAVEIS)} fontes
+            </div>
         </div>
     </body>
     </html>
     '''
 
 # ============================================
-# INICIALIZACAO
+# ROTA DE ESTATÍSTICAS
+# ============================================
+
+@app.route('/stats')
+def stats_page():
+    noticias = radar._carregar_noticias()
+    
+    # Conta por fonte
+    fontes_count = {}
+    for n in noticias:
+        fontes_count[n.fonte] = fontes_count.get(n.fonte, 0) + 1
+    
+    # Ordena por quantidade
+    fontes_ordenadas = sorted(fontes_count.items(), key=lambda x: x[1], reverse=True)
+    
+    html_fontes = ''
+    for fonte, count in fontes_ordenadas[:20]:
+        html_fontes += f'<li>{fonte}: {count} notícias</li>'
+    
+    return f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>📊 Estatísticas - SHARP FRONT 16 RJ</title>
+        <style>
+            body {{ background: #0a0a0a; color: white; font-family: Arial; padding: 30px; }}
+            h1 {{ color: red; }}
+            .container {{ max-width: 800px; margin: 0 auto; }}
+            .stat-box {{ background: #111; border-left: 4px solid red; padding: 20px; margin: 20px 0; border-radius: 10px; }}
+            ul {{ list-style: none; padding: 0; }}
+            li {{ background: #1a1a1a; margin: 5px 0; padding: 8px 15px; border-radius: 5px; }}
+            a {{ color: red; text-decoration: none; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>📊 Estatísticas do Radar</h1>
+            <div class="stat-box">
+                <p><strong>Total de notícias:</strong> {len(noticias)}</p>
+                <p><strong>Fontes ativas:</strong> {radar.estatisticas['fontes_funcionando']}</p>
+                <p><strong>Continentes:</strong> {', '.join(radar.estatisticas['continentes'])}</p>
+                <p><strong>Horário:</strong> {horario_brasilia()}</p>
+            </div>
+            
+            <h2>Notícias por fonte:</h2>
+            <ul>
+                {html_fontes}
+            </ul>
+            
+            <p style="margin-top: 30px;"><a href="/">← Voltar</a></p>
+        </div>
+    </body>
+    </html>
+    '''
+
+# ============================================
+# API DE ESTATÍSTICAS
+# ============================================
+
+@app.route('/api/stats')
+def api_stats():
+    noticias = radar._carregar_noticias()
+    geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
+    antifa = [n for n in noticias if n.categoria in ['antifa', 'anarquista', 'comunista']]
+    nacionais = [n for n in noticias if n.pais == 'Brasil']
+    internacionais = [n for n in noticias if n.pais != 'Brasil']
+    
+    return jsonify({
+        'total': len(noticias),
+        'geopolitica': len(geopolitica),
+        'antifa': len(antifa),
+        'nacional': len(nacionais),
+        'internacional': len(internacionais),
+        'paises': len(radar.estatisticas['paises']),
+        'continentes': len(radar.estatisticas['continentes']),
+        'fontes_ativas': radar.estatisticas['fontes_funcionando'],
+        'ultima_atualizacao': horario_brasilia(),
+        'hora_brasilia': hora_brasilia(),
+    })
+
+# ============================================
+# INICIALIZAÇÃO
 # ============================================
 
 def inicializar():
     """Inicializa o sistema"""
     logger.info("="*60)
-    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR ANTIFA")
+    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR ANTIFA v11.0")
     logger.info("="*60)
     
     noticias = radar._carregar_noticias()
     logger.info(f"Acervo inicial: {len(noticias)} noticias")
     logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)}")
+    logger.info(f"Filtro anti-casino ativo: {len(PALAVRAS_PROIBIDAS)} palavras bloqueadas")
     
     radar.iniciar_radar_automatico()
     logger.info("Radar automatico ativado - 5 segundos entre fontes")
+    logger.info("="*60)
 
 inicializar()
 
 # ============================================
-# FIM - NAO COLOQUE app.run() AQUI!
+# FIM - NÃO COLOQUE app.run() AQUI!
 # ============================================
