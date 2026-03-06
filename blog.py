@@ -1562,7 +1562,7 @@ def home():
                 <span>🛰️ Radar a cada {config.TEMPO_ATUALIZACAO} minutos</span>
                 <span>🔗 Links originais</span>
                 <span>⚡ {len(noticias)} notícias no acervo</span>
-                <span>🏴 {len(radar.estatisticas['fontes_funcionando'])} fontes ativas</span>
+                <span>🏴 {radar.estatisticas['fontes_funcionando']} fontes ativas</span>
             </div>
             
             <div class="footer-links">
