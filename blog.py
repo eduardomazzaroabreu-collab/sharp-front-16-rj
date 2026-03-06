@@ -1002,3 +1002,38 @@ inicializar()
 # ============================================
 # FIM - NÃO COLOQUE app.run() AQUI!
 # ============================================
+# ============================================
+# ROTA PARA FORÇAR BUSCA (USE ISSO PARA TESTAR)
+# ============================================
+@app.route('/forcar-busca')
+def forcar_busca():
+    import threading
+    def busca_forcada():
+        buscar_noticias()
+    threading.Thread(target=busca_forcada).start()
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🔴 Busca Iniciada</title>
+        <style>
+            body { background: black; color: white; font-family: Arial; text-align: center; padding: 50px; }
+            h1 { color: red; }
+            .info { background: #111; padding: 20px; border-radius: 10px; margin: 20px; }
+        </style>
+    </head>
+    <body>
+        <h1>🔴 SHARP - FRONT 16 RJ</h1>
+        <div class="info">
+            <h2>🚀 BUSCA INICIADA!</h2>
+            <p>As notícias estão sendo coletadas agora.</p>
+            <p>Volte para a página inicial e aguarde 1-2 minutos.</p>
+            <p><a href="/" style="color: red;">⬅️ Voltar para o site</a></p>
+        </div>
+    </body>
+    </html>
+    """
+
+# ============================================
+# FIM - NÃO COLOQUE app.run() AQUI!
+# ============================================
