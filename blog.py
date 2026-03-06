@@ -442,7 +442,7 @@ class RadarAutomaticoAntifa:
             logger.info(f"  🏳️ Países: {len(self.estatisticas['paises'])}")
             logger.info(f"  🇧🇷 Fontes nacionais: {self.estatisticas['fontes_por_prioridade'][1]}")
             logger.info(f"  🌎 Fontes internacionais: {self.estatisticas['fontes_por_prioridade'][2] + self.estatisticas['fontes_por_prioridade'][3]}")
-            logger.info(f"{'='=60}")
+            logger.info(f"{'='*60}
         else:
             logger.info("ℹ️ Nenhuma notícia nova encontrada nesta varredura")
     
