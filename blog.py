@@ -3,13 +3,14 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    🔴🏴 SHARP - FRONT 16 RJ 🏴🔴                          ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 12.0 - LIMPO                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 13.0 - ANTI-SONO               ║
 ║         RADAR AUTOMATICO COM TIMER DE 5 SEGUNDOS - HORARIO DE BRASILIA       ║
+║         SISTEMA DE AUTO-PING PARA MANTER O SITE ACORDADO 24/7                ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from datetime import datetime, timedelta
 import os
 import random
@@ -169,6 +170,43 @@ class ProxyManager:
         return None
 
 proxy_manager = ProxyManager()
+
+# ============================================
+# SISTEMA ANTI-SONO (MANTÉM O SITE ACORDADO 24/7)
+# ============================================
+
+class SistemaAntiSono:
+    """Sistema que faz ping no próprio site para não dormir"""
+    
+    def __init__(self):
+        self.ativo = True
+        self.url_do_site = "https://sharp-front-16-rj.onrender.com"
+        self.contador_pings = 0
+        
+    def iniciar(self):
+        """Inicia a thread de ping automático"""
+        thread = threading.Thread(target=self._loop_ping)
+        thread.daemon = True
+        thread.start()
+        logger.info("[Anti-Sono] Sistema ativado - Ping a cada 5 minutos")
+    
+    def _loop_ping(self):
+        """Loop que faz ping a cada 5 minutos"""
+        while self.ativo:
+            try:
+                # Faz uma requisição para o próprio site
+                response = requests.get(self.url_do_site, timeout=10)
+                self.contador_pings += 1
+                logger.info(f"[Anti-Sono] Ping #{self.contador_pings} - Status: {response.status_code}")
+                
+                # Também pinga a API de stats
+                requests.get(f"{self.url_do_site}/api/stats", timeout=5)
+                
+            except Exception as e:
+                logger.error(f"[Anti-Sono] Erro no ping: {e}")
+            
+            # Espera 5 minutos (300 segundos)
+            time.sleep(300)
 
 # ============================================
 # FONTES CONFIABEIS (NACIONAL E INTERNACIONAL)
@@ -426,7 +464,28 @@ def get_bandeira(pais):
 app = Flask(__name__)
 
 # ============================================
-# PAGINA PRINCIPAL - DESIGN SOFISTICADO (SEM BOLAS)
+# ROTA PARA SERVIR O QR CODE
+# ============================================
+
+@app.route('/qr-code.png')
+def serve_qr_code():
+    return send_from_directory('.', 'qr-code.png')
+
+# ============================================
+# ROTA DE PING (PARA O SISTEMA ANTI-SONO)
+# ============================================
+
+@app.route('/ping')
+def ping():
+    """Rota simples para manter o site acordado"""
+    return jsonify({
+        'status': 'ok',
+        'horario': horario_brasilia(),
+        'mensagem': 'Sistema anti-sono ativo'
+    })
+
+# ============================================
+# PAGINA PRINCIPAL - COM QR CODE
 # ============================================
 
 @app.route('/')
@@ -576,7 +635,7 @@ def home():
                 line-height: 1.6;
             }}
             
-            /* HEADER */
+            /* HEADER COM QR CODE */
             .header {{
                 background: linear-gradient(135deg, #000000 0%, #2a0000 70%, #000000 100%);
                 border-bottom: 4px solid #ff0000;
@@ -585,6 +644,7 @@ def home():
                 position: relative;
                 overflow: hidden;
                 box-shadow: 0 10px 30px rgba(255,0,0,0.3);
+                min-height: 200px;
             }}
             
             .header::before {{
@@ -607,6 +667,47 @@ def home():
             @keyframes moveStripes {{
                 0% {{ transform: translateX(0) translateY(0); }}
                 100% {{ transform: translateX(50%) translateY(50%); }}
+            }}
+            
+            /* QR CODE NO CANTO ESQUERDO */
+            .qr-code-container {{
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                z-index: 20;
+                background: rgba(0,0,0,0.7);
+                padding: 12px;
+                border-radius: 15px;
+                border: 1px solid #ff0000;
+                max-width: 160px;
+                backdrop-filter: blur(5px);
+            }}
+            
+            .qr-code-container img {{
+                width: 100px;
+                height: 100px;
+                display: block;
+                border-radius: 10px;
+                margin-bottom: 8px;
+                border: 2px solid #ff0000;
+            }}
+            
+            .qr-code-container p {{
+                color: #ff0000;
+                font-size: 0.75rem;
+                text-align: center;
+                line-height: 1.3;
+                margin: 0;
+            }}
+            
+            .qr-code-container p small {{
+                color: #fff;
+                font-size: 0.65rem;
+                display: block;
+                margin-top: 5px;
             }}
             
             h1 {{
@@ -635,7 +736,7 @@ def home():
             .horario-header {{
                 position: absolute;
                 bottom: 15px;
-                left: 30px;
+                right: 30px;
                 color: #888;
                 font-size: 0.9rem;
                 background: rgba(0,0,0,0.7);
@@ -993,18 +1094,19 @@ def home():
                 margin-top: 15px;
             }}
             
-            /* RESPONSIVIDADE */
-            @media (max-width: 1000px) {{
-                .grid-principal {{
-                    grid-template-columns: 1fr;
-                }}
-            }}
-            
+            /* RESPONSIVIDADE PARA O QR CODE */
             @media (max-width: 700px) {{
+                .qr-code-container {{
+                    position: relative;
+                    top: 0;
+                    left: 0;
+                    margin: 0 auto 20px;
+                }}
+                
                 .horario-header {{
                     position: relative;
                     bottom: 0;
-                    left: 0;
+                    right: 0;
                     display: inline-block;
                     margin-top: 10px;
                 }}
@@ -1020,13 +1122,37 @@ def home():
                     width: 100%;
                     text-align: center;
                 }}
+                
+                .qr-code-container {{
+                    max-width: 140px;
+                }}
+                
+                .qr-code-container img {{
+                    width: 80px;
+                    height: 80px;
+                }}
+            }}
+            
+            @media (max-width: 1000px) {{
+                .grid-principal {{
+                    grid-template-columns: 1fr;
+                }}
             }}
         </style>
     </head>
     <body>
         <div class="header">
+            <!-- QR CODE NO CANTO ESQUERDO -->
+            <div class="qr-code-container">
+                <img src="/qr-code.png" alt="QR Code" onerror="this.style.display='none'">
+                <p>
+                    Nos ajude a manter o coletivo ativo.<br>
+                    <small>Aponte a camera com o leitor de QR code</small>
+                </p>
+            </div>
+            
             <div class="horario-header">
-                🇧🇷 {horario_brasilia()}
+                🇧🇷 {horario_brasilia()} | 🔄 Anti-sono ativo
             </div>
             
             <h1>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</h1>
@@ -1104,6 +1230,7 @@ def home():
                 <span>🛸 Radar ativo</span>
                 <span>📡 {radar.estatisticas['fontes_funcionando']} fontes ativas</span>
                 <span>🇧🇷 Horário Brasília</span>
+                <span>🔄 Anti-sono 24/7</span>
             </div>
             
             <div class="footer-links">
@@ -1112,6 +1239,7 @@ def home():
                 <a href="#">Contato</a>
                 <a href="#">Manifesto</a>
                 <a href="/stats">📊 Estatísticas</a>
+                <a href="/ping">🔄 Ping</a>
             </div>
             
             <div class="footer-copyright">
@@ -1121,7 +1249,7 @@ def home():
                 Todos os links são das fontes originais
             </div>
             <div class="footer-versao">
-                v12.0 • Radar Global • {len(FONTES_CONFIAVEIS)} fontes internacionais
+                v13.0 • Radar Global • Anti-sono 24/7 • {len(FONTES_CONFIAVEIS)} fontes internacionais
             </div>
         </div>
     </body>
@@ -1172,6 +1300,7 @@ def stats_page():
                 <p><strong>Fontes ativas:</strong> {radar.estatisticas['fontes_funcionando']}</p>
                 <p><strong>Continentes:</strong> {', '.join(radar.estatisticas['continentes'])}</p>
                 <p><strong>Horário:</strong> {horario_brasilia()}</p>
+                <p><strong>Anti-sono:</strong> Ativo 24/7</p>
             </div>
             
             <h2>Notícias por fonte:</h2>
@@ -1208,6 +1337,7 @@ def api_stats():
         'fontes_ativas': radar.estatisticas['fontes_funcionando'],
         'ultima_atualizacao': horario_brasilia(),
         'hora_brasilia': hora_brasilia(),
+        'anti_sono': 'ativo'
     })
 
 # ============================================
@@ -1216,9 +1346,9 @@ def api_stats():
 
 def inicializar():
     """Inicializa o sistema"""
-    logger.info("="*60)
-    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR ANTIFA v12.0")
-    logger.info("="*60)
+    logger.info("="*70)
+    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR ANTIFA v13.0")
+    logger.info("="*70)
     
     noticias = radar._carregar_noticias()
     logger.info(f"Acervo inicial: {len(noticias)} noticias")
@@ -1227,7 +1357,13 @@ def inicializar():
     
     radar.iniciar_radar_automatico()
     logger.info("Radar automatico ativado - Busca global")
-    logger.info("="*60)
+    
+    # INICIA O SISTEMA ANTI-SONO
+    anti_sono = SistemaAntiSono()
+    anti_sono.iniciar()
+    logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
+    
+    logger.info("="*70)
 
 inicializar()
 
