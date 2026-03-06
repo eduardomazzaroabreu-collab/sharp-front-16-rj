@@ -1596,15 +1596,16 @@ def home():
                 <span class="badge">{len(destaques)} destaques</span>
             </div>
             
-            {% if destaques_html %}
-    {{ destaques_html|safe }}
-{% else %}
+            if destaques_html:
+    destaques_final = destaques_html
+else:
+    destaques_final = f'''
     <div class="mensagem-vazia">
         <div class="loading-animation"></div>
-        <p>[Radar] em operacao... buscando informacoes antifascistas em {{ len(FONTES_CONFIAVEIS) }} fontes globais</p>
+        <p>[Radar] em operacao... buscando informacoes antifascistas em {len(FONTES_CONFIAVEIS)} fontes globais</p>
         <p style="font-size: 0.9rem; margin-top: 20px;">[Timer] Aguarde 5 segundos entre cada fonte para maxima eficiencia</p>
     </div>
-{% endif %}
+    '''
         
         <!-- GRID PRINCIPAL DE 4 COLUNAS -->
         <div class="grid-principal">
