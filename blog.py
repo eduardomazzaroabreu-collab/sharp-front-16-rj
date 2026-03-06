@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    🔴🏴 SHARP - FRONT 16 RJ 🏴🔴                          ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 11.0 - ULTIMATE                 ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 12.0 - LIMPO                    ║
 ║         RADAR AUTOMATICO COM TIMER DE 5 SEGUNDOS - HORARIO DE BRASILIA       ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -426,7 +426,7 @@ def get_bandeira(pais):
 app = Flask(__name__)
 
 # ============================================
-# PAGINA PRINCIPAL - DESIGN SOFISTICADO
+# PAGINA PRINCIPAL - DESIGN SOFISTICADO (SEM BOLAS)
 # ============================================
 
 @app.route('/')
@@ -467,7 +467,6 @@ def home():
         <div class="mensagem-vazia">
             <div class="loading-animation"></div>
             <p>🔍 Radar em operacao... buscando informacoes em {len(FONTES_CONFIAVEIS)} fontes</p>
-            <p>⏱️ Timer: 5 segundos entre cada fonte</p>
         </div>
         '''
     
@@ -577,7 +576,7 @@ def home():
                 line-height: 1.6;
             }}
             
-            /* HEADER COM DUAS BOLAS ANIMADAS */
+            /* HEADER */
             .header {{
                 background: linear-gradient(135deg, #000000 0%, #2a0000 70%, #000000 100%);
                 border-bottom: 4px solid #ff0000;
@@ -608,52 +607,6 @@ def home():
             @keyframes moveStripes {{
                 0% {{ transform: translateX(0) translateY(0); }}
                 100% {{ transform: translateX(50%) translateY(50%); }}
-            }}
-            
-            .bolas-container {{
-                position: absolute;
-                top: 25px;
-                right: 40px;
-                display: flex;
-                gap: 25px;
-                z-index: 10;
-            }}
-            
-            .bola-vermelha {{
-                width: 80px;
-                height: 80px;
-                background: #ff0000;
-                border-radius: 50%;
-                box-shadow: 0 0 50px rgba(255,0,0,0.8);
-                animation: pulsarVermelha 2.5s infinite ease-in-out, flutuar 4s infinite ease-in-out;
-            }}
-            
-            .bola-preta {{
-                width: 80px;
-                height: 80px;
-                background: #000;
-                border-radius: 50%;
-                border: 3px solid #ff0000;
-                box-shadow: 0 0 50px rgba(255,0,0,0.5);
-                animation: pulsarPreta 3s infinite ease-in-out, flutuar 4s infinite ease-in-out 0.5s;
-            }}
-            
-            @keyframes pulsarVermelha {{
-                0% {{ transform: scale(1); box-shadow: 0 0 50px rgba(255,0,0,0.8); }}
-                50% {{ transform: scale(1.1); box-shadow: 0 0 80px rgba(255,0,0,1); }}
-                100% {{ transform: scale(1); box-shadow: 0 0 50px rgba(255,0,0,0.8); }}
-            }}
-            
-            @keyframes pulsarPreta {{
-                0% {{ transform: scale(1); box-shadow: 0 0 40px rgba(255,0,0,0.4); }}
-                50% {{ transform: scale(1.05); box-shadow: 0 0 70px rgba(255,0,0,0.8); }}
-                100% {{ transform: scale(1); box-shadow: 0 0 40px rgba(255,0,0,0.4); }}
-            }}
-            
-            @keyframes flutuar {{
-                0% {{ transform: translateY(0); }}
-                50% {{ transform: translateY(-10px); }}
-                100% {{ transform: translateY(0); }}
             }}
             
             h1 {{
@@ -720,23 +673,6 @@ def home():
                 color: #000;
                 transform: translateY(-3px);
                 box-shadow: 0 8px 20px rgba(255,0,0,0.4);
-            }}
-            
-            .radar-info {{
-                display: flex;
-                justify-content: center;
-                gap: 15px;
-                flex-wrap: wrap;
-                margin: 20px 0;
-            }}
-            
-            .radar-badge {{
-                background: #111;
-                color: #ff0000;
-                padding: 6px 18px;
-                border-radius: 30px;
-                font-size: 0.9rem;
-                border: 1px solid #ff0000;
             }}
             
             .tag-container {{
@@ -1065,14 +1001,6 @@ def home():
             }}
             
             @media (max-width: 700px) {{
-                .bolas-container {{
-                    position: relative;
-                    top: 0;
-                    right: 0;
-                    justify-content: center;
-                    margin-bottom: 20px;
-                }}
-                
                 .horario-header {{
                     position: relative;
                     bottom: 0;
@@ -1097,13 +1025,8 @@ def home():
     </head>
     <body>
         <div class="header">
-            <div class="bolas-container">
-                <div class="bola-vermelha" title="Luta e Resistência"></div>
-                <div class="bola-preta" title="Antifascismo"></div>
-            </div>
-            
             <div class="horario-header">
-                🇧🇷 {horario_brasilia()} | ⏱️ Timer: 5s
+                🇧🇷 {horario_brasilia()}
             </div>
             
             <h1>🔴🏴 SHARP - FRONT 16 RJ 🏴🔴</h1>
@@ -1117,12 +1040,6 @@ def home():
                 <span class="stat-item">🌎 {len(internacionais)} internacionais</span>
                 <span class="stat-item">⚔️ {len(geopolitica)} conflitos</span>
                 <span class="stat-item">🏴 {len(antifa)} antifa</span>
-            </div>
-            
-            <div class="radar-info">
-                <span class="radar-badge">🛸 Radar ativo</span>
-                <span class="radar-badge">⏱️ 5s entre fontes</span>
-                <span class="radar-badge">🔤 Filtro anti-casino ativo</span>
             </div>
             
             <div class="tag-container">
@@ -1185,9 +1102,7 @@ def home():
         <div class="footer">
             <div class="footer-stats">
                 <span>🛸 Radar ativo</span>
-                <span>⏱️ Timer 5s</span>
                 <span>📡 {radar.estatisticas['fontes_funcionando']} fontes ativas</span>
-                <span>🔤 Filtro anti-casino</span>
                 <span>🇧🇷 Horário Brasília</span>
             </div>
             
@@ -1206,7 +1121,7 @@ def home():
                 Todos os links são das fontes originais
             </div>
             <div class="footer-versao">
-                v11.0 • Radar Anti-Casino • Timer 5s • {len(FONTES_CONFIAVEIS)} fontes
+                v12.0 • Radar Global • {len(FONTES_CONFIAVEIS)} fontes internacionais
             </div>
         </div>
     </body>
@@ -1302,7 +1217,7 @@ def api_stats():
 def inicializar():
     """Inicializa o sistema"""
     logger.info("="*60)
-    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR ANTIFA v11.0")
+    logger.info("🔴🏴 SHARP - FRONT 16 RJ - RADAR ANTIFA v12.0")
     logger.info("="*60)
     
     noticias = radar._carregar_noticias()
@@ -1311,7 +1226,7 @@ def inicializar():
     logger.info(f"Filtro anti-casino ativo: {len(PALAVRAS_PROIBIDAS)} palavras bloqueadas")
     
     radar.iniciar_radar_automatico()
-    logger.info("Radar automatico ativado - 5 segundos entre fontes")
+    logger.info("Radar automatico ativado - Busca global")
     logger.info("="*60)
 
 inicializar()
