@@ -1597,7 +1597,7 @@ def home():
             </div>
             
             {% if destaques_html %}
-    {{ destaques_html }}
+    {{ destaques_html|safe }}
 {% else %}
     <div class="mensagem-vazia">
         <div class="loading-animation"></div>
