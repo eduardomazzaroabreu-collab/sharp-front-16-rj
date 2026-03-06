@@ -712,7 +712,7 @@ def buscar_noticias_supremo():
     
     # Seleciona palavras-chave aleatórias
     palavras = radar._selecionar_palavras_aleatorias()
-    logger.info(f"🔍 Palavras-chave: {', '.join(palavras[:5]}... ({len(palavras)} total)")
+    logger.info(f"🔍 Palavras-chave: {', '.join(palavras[:5])}... ({len(palavras)} total)")
     
     # Carrega notícias antigas
     noticias_antigas = carregar_noticias()
