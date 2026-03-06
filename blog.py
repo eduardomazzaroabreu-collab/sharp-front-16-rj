@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 SHARP - FRONT 16 RJ
-Sistema de Busca Global de Notícias
-Versão 5.0 - Design Profissional
+SISTEMA DE BUSCA GLOBAL VIA SATÉLITE INFORMACIONAL
+Versão 6.0 - RADAR MUNDIAL COM DUAS BOLAS
 """
 
 from flask import Flask, jsonify, send_from_directory
@@ -21,6 +21,8 @@ from requests.adapters import HTTPAdapter
 import logging
 from collections import Counter
 import hashlib
+import socket
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Configuração profissional de logging
 logging.basicConfig(
@@ -38,9 +40,10 @@ ARQUIVO_NOTICIAS = 'noticias_salvas.json'
 ARQUIVO_CACHE = 'cache_fontes.json'
 ARQUIVO_HISTORICO = 'historico_buscas.json'
 TEMPO_ATUALIZACAO = 15  # minutos
-TIMEOUT_REQUISICAO = 8  # segundos
-MAX_NOTICIAS_POR_FONTE = 4
-MAX_NOTICIAS_TOTAL = 800
+TIMEOUT_REQUISICAO = 5  # segundos
+MAX_NOTICIAS_POR_FONTE = 3
+MAX_NOTICIAS_TOTAL = 1000
+MAX_TRABALHADORES = 20  # Threads simultâneas
 
 # ============================================
 # SISTEMA DE PROXY INTELIGENTE
@@ -56,11 +59,12 @@ class ProxyManager:
     def atualizar_lista(self):
         """Busca proxies públicos atualizados"""
         try:
-            # Fontes de proxies gratuitos
+            # Múltiplas fontes de proxies
             fontes_proxy = [
                 'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all',
                 'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
-                'https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt'
+                'https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt',
+                'https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt'
             ]
             
             for url in fontes_proxy:
@@ -72,8 +76,10 @@ class ProxyManager:
                 except:
                     continue
             
-            # Remove duplicatas
+            # Remove duplicatas e proxies inválidos
             self.proxies = list(set(self.proxies))
+            self.proxies = [p for p in self.proxies if ':' in p]
+            
             logger.info(f"✅ {len(self.proxies)} proxies carregados")
         except Exception as e:
             logger.error(f"❌ Erro ao carregar proxies: {e}")
@@ -91,60 +97,183 @@ class ProxyManager:
 proxy_manager = ProxyManager()
 
 # ============================================
-# SISTEMA DE RETRY INTELIGENTE
-# ============================================
-session = requests.Session()
-retry_strategy = Retry(
-    total=2,
-    backoff_factor=0.5,
-    status_forcelist=[429, 500, 502, 503, 504],
-)
-adapter = HTTPAdapter(max_retries=retry_strategy)
-session.mount("http://", adapter)
-session.mount("https://", adapter)
-
-# ============================================
-# LISTA DE SITES INTERNACIONAIS
+# LISTA DE SITES GLOBAIS (VARRE O MUNDO TODO)
 # ============================================
 SITES_CONFIAVEIS = [
-    # ===== GEOPOLÍTICA & GUERRA =====
-    {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'BBC News', 'pais': 'UK', 'url': 'http://feeds.bbci.co.uk/news/rss.xml', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'Reuters', 'pais': 'UK', 'url': 'https://feeds.reuters.com/reuters/topNews', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'The Guardian', 'pais': 'UK', 'url': 'https://www.theguardian.com/world/rss', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'France 24', 'pais': 'França', 'url': 'https://www.france24.com/en/rss', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'Deutsche Welle', 'pais': 'Alemanha', 'url': 'https://rss.dw.com/feeds/rss-english-all', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'Haaretz', 'pais': 'Israel', 'url': 'https://www.haaretz.com/rss', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'The Jerusalem Post', 'pais': 'Israel', 'url': 'https://www.jpost.com/Rss/RssFeeds', 'categoria': 'geopolitica', 'idioma': 'en'},
-    {'nome': 'Arab News', 'pais': 'Arábia Saudita', 'url': 'https://www.arabnews.com/rss', 'categoria': 'geopolitica', 'idioma': 'en'},
-    
-    # ===== ANTIFA, ANARQUISTAS & COMUNISTAS =====
-    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'antifa', 'idioma': 'en'},
-    {'nome': 'CrimethInc', 'pais': 'Global', 'url': 'https://crimethinc.com/feeds/all.atom.xml', 'categoria': 'anarquista', 'idioma': 'en'},
-    {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria': 'comunista', 'idioma': 'en'},
-    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'comunista', 'idioma': 'en'},
-    {'nome': 'The Real News', 'pais': 'USA', 'url': 'https://therealnews.com/rss', 'categoria': 'antifa', 'idioma': 'en'},
-    {'nome': 'Democracy Now', 'pais': 'USA', 'url': 'https://www.democracynow.org/podcast.xml', 'categoria': 'antifa', 'idioma': 'en'},
-    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'antifa', 'idioma': 'en'},
-    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'comunista', 'idioma': 'en'},
-    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria': 'antifa', 'idioma': 'en'},
-    {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria': 'comunista', 'idioma': 'en'},
-    {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria': 'antifa', 'idioma': 'en'},
-    {'nome': 'Ceasefire Magazine', 'pais': 'UK', 'url': 'https://ceasefiremagazine.co.uk/feed/', 'categoria': 'antifa', 'idioma': 'en'},
-    
-    # ===== BRASIL & PORTUGAL =====
-    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'comunista', 'idioma': 'pt'},
-    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'comunista', 'idioma': 'pt'},
-    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'antifa', 'idioma': 'pt'},
-    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'comunista', 'idioma': 'pt'},
-    {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria': 'comunista', 'idioma': 'pt'},
+    # ===== ÁFRICA =====
+    {'nome': 'News24', 'pais': 'África do Sul', 'url': 'https://www.news24.com/feeds', 'categoria': 'geral', 'idioma': 'en', 'continente': 'África'},
+    {'nome': 'Daily Maverick', 'pais': 'África do Sul', 'url': 'https://www.dailymaverick.co.za/feed/', 'categoria': 'geral', 'idioma': 'en', 'continente': 'África'},
+    {'nome': 'The East African', 'pais': 'Quênia', 'url': 'https://www.theeastafrican.co.ke/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'África'},
+    {'nome': 'Africanews', 'pais': 'Congo', 'url': 'https://www.africanews.com/feed/', 'categoria': 'geral', 'idioma': 'en', 'continente': 'África'},
     
     # ===== AMÉRICA LATINA =====
-    {'nome': 'Página 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'antifa', 'idioma': 'es'},
-    {'nome': 'La Jornada', 'pais': 'México', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'antifa', 'idioma': 'es'},
-    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'comunista', 'idioma': 'es'},
+    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'social', 'idioma': 'pt', 'continente': 'América Latina'},
+    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'social', 'idioma': 'pt', 'continente': 'América Latina'},
+    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'social', 'idioma': 'pt', 'continente': 'América Latina'},
+    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'social', 'idioma': 'pt', 'continente': 'América Latina'},
+    {'nome': 'Página 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'geral', 'idioma': 'es', 'continente': 'América Latina'},
+    {'nome': 'La Jornada', 'pais': 'México', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'geral', 'idioma': 'es', 'continente': 'América Latina'},
+    {'nome': 'El Tiempo', 'pais': 'Colômbia', 'url': 'https://www.eltiempo.com/rss', 'categoria': 'geral', 'idioma': 'es', 'continente': 'América Latina'},
+    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'social', 'idioma': 'es', 'continente': 'América Latina'},
+    {'nome': 'Clarín', 'pais': 'Argentina', 'url': 'https://www.clarin.com/rss', 'categoria': 'geral', 'idioma': 'es', 'continente': 'América Latina'},
+    {'nome': 'El Universal', 'pais': 'México', 'url': 'https://www.eluniversal.com.mx/rss', 'categoria': 'geral', 'idioma': 'es', 'continente': 'América Latina'},
+    {'nome': 'O Globo', 'pais': 'Brasil', 'url': 'https://oglobo.globo.com/rss.xml', 'categoria': 'geral', 'idioma': 'pt', 'continente': 'América Latina'},
+    {'nome': 'Folha de S.Paulo', 'pais': 'Brasil', 'url': 'https://feeds.folha.uol.com.br/emcimadahora/rss.xml', 'categoria': 'geral', 'idioma': 'pt', 'continente': 'América Latina'},
+    
+    # ===== EUROPA =====
+    {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria': 'social', 'idioma': 'pt', 'continente': 'Europa'},
+    {'nome': 'Deutsche Welle', 'pais': 'Alemanha', 'url': 'https://rss.dw.com/feeds/rss-english-all', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'France 24', 'pais': 'França', 'url': 'https://www.france24.com/en/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'The Guardian', 'pais': 'UK', 'url': 'https://www.theguardian.com/world/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria': 'social', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria': 'social', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'Ceasefire Magazine', 'pais': 'UK', 'url': 'https://ceasefiremagazine.co.uk/feed/', 'categoria': 'social', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'Le Monde', 'pais': 'França', 'url': 'https://www.lemonde.fr/rss/une.xml', 'categoria': 'geral', 'idioma': 'fr', 'continente': 'Europa'},
+    {'nome': 'El País', 'pais': 'Espanha', 'url': 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada', 'categoria': 'geral', 'idioma': 'es', 'continente': 'Europa'},
+    {'nome': 'La Repubblica', 'pais': 'Itália', 'url': 'https://www.repubblica.it/rss', 'categoria': 'geral', 'idioma': 'it', 'continente': 'Europa'},
+    {'nome': 'Corriere della Sera', 'pais': 'Itália', 'url': 'https://www.corriere.it/rss', 'categoria': 'geral', 'idioma': 'it', 'continente': 'Europa'},
+    {'nome': 'Der Spiegel', 'pais': 'Alemanha', 'url': 'https://www.spiegel.de/international/index.rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'Die Welt', 'pais': 'Alemanha', 'url': 'https://www.welt.de/feeds/english.rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'BBC News', 'pais': 'UK', 'url': 'http://feeds.bbci.co.uk/news/rss.xml', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'Reuters', 'pais': 'UK', 'url': 'https://feeds.reuters.com/reuters/topNews', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'The Independent', 'pais': 'UK', 'url': 'https://www.independent.co.uk/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Europa'},
+    {'nome': 'EUobserver', 'pais': 'Bélgica', 'url': 'https://euobserver.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Europa'},
+    
+    # ===== ORIENTE MÉDIO =====
+    {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio'},
+    {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio'},
+    {'nome': 'Haaretz', 'pais': 'Israel', 'url': 'https://www.haaretz.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio'},
+    {'nome': 'The Jerusalem Post', 'pais': 'Israel', 'url': 'https://www.jpost.com/Rss/RssFeeds', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio'},
+    {'nome': 'Arab News', 'pais': 'Arábia Saudita', 'url': 'https://www.arabnews.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio'},
+    {'nome': 'Gulf News', 'pais': 'Emirados', 'url': 'https://gulfnews.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio'},
+    {'nome': 'Iran International', 'pais': 'Irã', 'url': 'https://www.iranintl.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Oriente Médio'},
+    
+    # ===== ÁSIA =====
+    {'nome': 'The Hindu', 'pais': 'Índia', 'url': 'https://www.thehindu.com/news/feeder', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia'},
+    {'nome': 'Times of India', 'pais': 'Índia', 'url': 'https://timesofindia.indiatimes.com/rss.cms', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia'},
+    {'nome': 'The Japan Times', 'pais': 'Japão', 'url': 'https://www.japantimes.co.jp/feed/', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia'},
+    {'nome': 'China Daily', 'pais': 'China', 'url': 'https://www.chinadaily.com.cn/rss/', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia'},
+    {'nome': 'The Korea Herald', 'pais': 'Coreia do Sul', 'url': 'http://www.koreaherald.com/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia'},
+    {'nome': 'The Straits Times', 'pais': 'Singapura', 'url': 'https://www.straitstimes.com/news/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia'},
+    {'nome': 'South China Morning Post', 'pais': 'Hong Kong', 'url': 'https://www.scmp.com/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Ásia'},
+    {'nome': 'Nikkei Asia', 'pais': 'Japão', 'url': 'https://asia.nikkei.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Ásia'},
+    
+    # ===== OCEANIA =====
+    {'nome': 'ABC News', 'pais': 'Austrália', 'url': 'https://www.abc.net.au/news/feed', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Oceania'},
+    {'nome': 'The Sydney Morning Herald', 'pais': 'Austrália', 'url': 'https://www.smh.com.au/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Oceania'},
+    {'nome': 'The Age', 'pais': 'Austrália', 'url': 'https://www.theage.com.au/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Oceania'},
+    {'nome': 'RNZ', 'pais': 'Nova Zelândia', 'url': 'https://www.rnz.co.nz/rss', 'categoria': 'geral', 'idioma': 'en', 'continente': 'Oceania'},
+    
+    # ===== INTERNACIONAIS =====
+    {'nome': 'Democracy Now', 'pais': 'USA', 'url': 'https://www.democracynow.org/podcast.xml', 'categoria': 'social', 'idioma': 'en', 'continente': 'América do Norte'},
+    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'social', 'idioma': 'en', 'continente': 'América do Norte'},
+    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'social', 'idioma': 'en', 'continente': 'América do Norte'},
+    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'social', 'idioma': 'en', 'continente': 'América do Norte'},
+    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria': 'social', 'idioma': 'en', 'continente': 'América do Norte'},
+    {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria': 'social', 'idioma': 'en', 'continente': 'Global'},
+    
+    # ===== GEOPOLÍTICA =====
+    {'nome': 'Foreign Policy', 'pais': 'USA', 'url': 'https://foreignpolicy.com/feed/', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'América do Norte'},
+    {'nome': 'The Diplomat', 'pais': 'Japão', 'url': 'https://thediplomat.com/feed/', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'Ásia'},
+    {'nome': 'War on the Rocks', 'pais': 'USA', 'url': 'https://warontherocks.com/feed/', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'América do Norte'},
+    {'nome': 'Stratfor', 'pais': 'USA', 'url': 'https://worldview.stratfor.com/rss', 'categoria': 'geopolitica', 'idioma': 'en', 'continente': 'América do Norte'},
 ]
+
+# ============================================
+# SISTEMA DE RADAR GLOBAL (BUSCA PARALELA)
+# ============================================
+class RadarGlobal:
+    """Sistema de busca paralela tipo radar"""
+    
+    def __init__(self):
+        self.fontes_ativas = []
+        self.estatisticas = {
+            'total_buscas': 0,
+            'fontes_funcionando': 0,
+            'noticias_encontradas': 0,
+            'continentes': set()
+        }
+    
+    def varrer_mundo(self):
+        """Executa varredura global em paralelo"""
+        logger.info("🛰️ ATIVANDO RADAR GLOBAL...")
+        
+        resultados = []
+        with ThreadPoolExecutor(max_workers=MAX_TRABALHADORES) as executor:
+            futures = {executor.submit(self.testar_fonte, site): site for site in SITES_CONFIAVEIS}
+            
+            for future in as_completed(futures):
+                site = futures[future]
+                try:
+                    resultado = future.result(timeout=TIMEOUT_REQUISICAO)
+                    if resultado:
+                        resultados.extend(resultado)
+                except Exception as e:
+                    logger.debug(f"❌ {site['nome']} falhou: {e}")
+        
+        return resultados
+    
+    def testar_fonte(self, site):
+        """Testa uma fonte individual"""
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+            'Connection': 'keep-alive',
+        }
+        
+        noticias = []
+        try:
+            resposta = requests.get(site['url'], headers=headers, timeout=TIMEOUT_REQUISICAO)
+            
+            if resposta.status_code == 200:
+                feed = feedparser.parse(resposta.content)
+                
+                if len(feed.entries) > 0:
+                    logger.info(f"📡 {site['continente']} - {site['pais']}: {site['nome']} ({len(feed.entries)} notícias)")
+                    
+                    for entrada in feed.entries[:MAX_NOTICIAS_POR_FONTE]:
+                        noticia = self.criar_noticia(site, entrada)
+                        if noticia:
+                            noticias.append(noticia)
+                    
+                    self.fontes_ativas.append(site['nome'])
+                    self.estatisticas['fontes_funcionando'] += 1
+                    self.estatisticas['continentes'].add(site['continente'])
+        except:
+            pass
+        
+        return noticias
+    
+    def criar_noticia(self, site, entrada):
+        """Cria objeto de notícia"""
+        try:
+            resumo = ""
+            if hasattr(entrada, 'summary'):
+                resumo = BeautifulSoup(entrada.summary, 'html.parser').get_text()
+            elif hasattr(entrada, 'description'):
+                resumo = BeautifulSoup(entrada.description, 'html.parser').get_text()
+            
+            resumo = resumo[:200] + "..." if resumo and len(resumo) > 200 else resumo or "Leia o artigo completo..."
+            
+            return {
+                'id': hashlib.md5(entrada.link.encode()).hexdigest()[:8],
+                'fonte': site['nome'],
+                'pais': site['pais'],
+                'continente': site['continente'],
+                'categoria': site['categoria'],
+                'idioma': site['idioma'],
+                'titulo': entrada.title,
+                'resumo': resumo,
+                'link': entrada.link,
+                'data': entrada.get('published', datetime.now().strftime('%Y-%m-%d %H:%M')),
+                'publicada_em': datetime.now().isoformat(),
+                'destaque': False
+            }
+        except:
+            return None
+
+radar = RadarGlobal()
 
 # ============================================
 # FUNÇÕES AUXILIARES
@@ -175,7 +304,7 @@ def salvar_noticias(noticias):
                 'noticias': noticias,
                 'ultima_atualizacao': datetime.now().isoformat(),
                 'total': len(noticias),
-                'versao': '5.0'
+                'versao': '6.0 - Radar Global'
             }, f, ensure_ascii=False, indent=2)
         logger.info(f"✅ Notícias salvas: {len(noticias)}")
         return True
@@ -194,145 +323,28 @@ def carregar_noticias():
             return []
     return []
 
-def extrair_resumo(entrada):
-    """Extrai resumo de forma segura"""
-    try:
-        resumo = ""
-        if hasattr(entrada, 'summary'):
-            resumo = BeautifulSoup(entrada.summary, 'html.parser').get_text()
-        elif hasattr(entrada, 'description'):
-            resumo = BeautifulSoup(entrada.description, 'html.parser').get_text()
-        
-        resumo = resumo.strip()
-        if len(resumo) > 250:
-            resumo = resumo[:250] + "..."
-        return resumo or "Leia o artigo completo no site original..."
-    except:
-        return "Leia o artigo completo no site original..."
-
 # ============================================
-# FUNÇÃO PRINCIPAL DE BUSCA
+# FUNÇÃO PRINCIPAL DE BUSCA (RADAR GLOBAL)
 # ============================================
 def buscar_noticias():
-    """Busca notícias com múltiplas camadas de proteção"""
+    """Executa varredura global via radar"""
     
-    logger.info(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🌍 Iniciando busca global...")
+    logger.info(f"\n🛰️ [{datetime.now().strftime('%H:%M:%S')}] ATIVANDO RADAR GLOBAL...")
     
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-        'Connection': 'keep-alive',
-    }
-    
-    cache = carregar_cache()
     noticias_antigas = carregar_noticias()
     links_antigos = {n['link'] for n in noticias_antigas}
-    noticias_novas = []
     
-    estatisticas = {
-        'testadas': 0,
-        'geopolitica': 0,
-        'antifa': 0,
-        'anarquista': 0,
-        'comunista': 0,
-        'falharam': 0,
-        'paises': set(),
-        'fontes_ativas': []
-    }
+    # Varre o mundo em paralelo
+    novas_noticias = radar.varrer_mundo()
     
-    logger.info("🔍 Escaneando fontes internacionais...")
+    # Filtra notícias já existentes
+    noticias_novas = [n for n in novas_noticias if n['link'] not in links_antigos]
     
-    # Ordena: primeiro fontes em cache, depois novas
-    fontes_para_testar = []
-    for nome in cache.get('funcionaram', []):
-        for site in SITES_CONFIAVEIS:
-            if site['nome'] == nome:
-                fontes_para_testar.append(site)
-                break
-    
-    for site in SITES_CONFIAVEIS:
-        if site not in fontes_para_testar:
-            fontes_para_testar.append(site)
-    
-    for site in fontes_para_testar:
-        estatisticas['testadas'] += 1
-        
-        # Tenta com proxy se falhar
-        for tentativa in range(3):
-            try:
-                proxy = proxy_manager.obter_proxy() if tentativa > 0 else None
-                
-                logger.info(f"  → {estatisticas['testadas']:2d}. {site['nome']} ({site['pais']})... ", end="")
-                
-                resposta = session.get(
-                    site['url'], 
-                    headers=headers,
-                    proxies=proxy,
-                    timeout=TIMEOUT_REQUISICAO,
-                    allow_redirects=True
-                )
-                
-                if resposta.status_code == 200:
-                    feed = feedparser.parse(resposta.content)
-                    
-                    if len(feed.entries) > 0:
-                        logger.info(f"✅ {len(feed.entries)} notícias")
-                        
-                        # Atualiza estatísticas por categoria
-                        if site['categoria'] in estatisticas:
-                            estatisticas[site['categoria']] += 1
-                        
-                        estatisticas['paises'].add(site['pais'])
-                        estatisticas['fontes_ativas'].append(site['nome'])
-                        
-                        for entrada in feed.entries[:MAX_NOTICIAS_POR_FONTE]:
-                            if entrada.link not in links_antigos:
-                                noticia = {
-                                    'id': hashlib.md5(entrada.link.encode()).hexdigest()[:8],
-                                    'fonte': site['nome'],
-                                    'pais': site['pais'],
-                                    'categoria': site['categoria'],
-                                    'idioma': site['idioma'],
-                                    'titulo': entrada.title,
-                                    'resumo': extrair_resumo(entrada),
-                                    'link': entrada.link,
-                                    'data': entrada.get('published', datetime.now().strftime('%Y-%m-%d %H:%M')),
-                                    'publicada_em': datetime.now().isoformat(),
-                                    'destaque': False
-                                }
-                                noticias_novas.append(noticia)
-                                logger.info(f"    ✅ {entrada.title[:80]}...")
-                        break
-                    else:
-                        logger.info("❌ Sem notícias")
-                        estatisticas['falharam'] += 1
-                        break
-                else:
-                    logger.info(f"❌ Erro {resposta.status_code}")
-                    if tentativa == 2:
-                        estatisticas['falharam'] += 1
-                        
-            except Exception as e:
-                if tentativa == 2:
-                    logger.info("❌ Falhou")
-                    estatisticas['falharam'] += 1
-                continue
-    
-    # Atualiza cache
-    cache['funcionaram'] = estatisticas['fontes_ativas']
-    cache['ultima_atualizacao'] = datetime.now().isoformat()
-    salvar_cache(cache)
-    
-    # Relatório completo
-    logger.info(f"\n📊 RELATÓRIO GLOBAL:")
-    logger.info(f"  📍 Total testadas: {estatisticas['testadas']}")
-    logger.info(f"  ⚔️ Geopolítica: {estatisticas['geopolitica']}")
-    logger.info(f"  🏴 Antifa: {estatisticas['antifa']}")
-    logger.info(f"  🖤 Anarquista: {estatisticas['anarquista']}")
-    logger.info(f"  🔴 Comunista: {estatisticas['comunista']}")
-    logger.info(f"  ❌ Falharam: {estatisticas['falharam']}")
-    logger.info(f"  🌍 Países: {len(estatisticas['paises'])}")
+    # Relatório do radar
+    logger.info(f"\n📊 RELATÓRIO DO RADAR GLOBAL:")
+    logger.info(f"  📡 Fontes ativas: {radar.estatisticas['fontes_funcionando']}")
+    logger.info(f"  🌍 Continentes cobertos: {len(radar.estatisticas['continentes'])}")
+    logger.info(f"  📰 Notícias novas: {len(noticias_novas)}")
     
     if noticias_novas:
         todas_noticias = noticias_novas + noticias_antigas
@@ -344,7 +356,7 @@ def buscar_noticias():
             n['destaque'] = True
         
         if salvar_noticias(todas_noticias):
-            logger.info(f"  🎯 {len(noticias_novas)} nova(s) notícia(s) de {len(estatisticas['fontes_ativas'])} fontes!")
+            logger.info(f"  🎯 {len(noticias_novas)} nova(s) notícia(s) de {radar.estatisticas['fontes_funcionando']} fontes!")
             logger.info(f"  📊 Acervo total: {len(todas_noticias)}")
     else:
         logger.info("  ℹ️ Nenhuma notícia nova encontrada")
@@ -352,7 +364,7 @@ def buscar_noticias():
     return noticias_novas
 
 # ============================================
-# PÁGINA PRINCIPAL - DESIGN PROFISSIONAL
+# PÁGINA PRINCIPAL - DESIGN COM DUAS BOLAS
 # ============================================
 @app.route('/')
 def home():
@@ -360,23 +372,27 @@ def home():
     
     # Separa por categoria
     geopolitica = [n for n in noticias if n.get('categoria') == 'geopolitica']
-    antifa = [n for n in noticias if n.get('categoria') == 'antifa']
-    anarquista = [n for n in noticias if n.get('categoria') == 'anarquista']
-    comunista = [n for n in noticias if n.get('categoria') == 'comunista']
-    
-    # Junta antifa, anarquista e comunista na coluna da esquerda
-    esquerda = antifa + anarquista + comunista
-    esquerda.sort(key=lambda x: x.get('data', ''), reverse=True)
+    social = [n for n in noticias if n.get('categoria') in ['social', 'geral']]
     
     # Destaques
     destaques = [n for n in noticias if n.get('destaque')][:3]
+    
+    # Estatísticas por continente
+    continentes = {}
+    for n in noticias:
+        cont = n.get('continente', 'Desconhecido')
+        continentes[cont] = continentes.get(cont, 0) + 1
     
     # Bandeiras dos países
     bandeiras = {
         'USA': '🇺🇸', 'UK': '🇬🇧', 'Brasil': '🇧🇷', 'Portugal': '🇵🇹',
         'Global': '🌍', 'Qatar': '🇶🇦', 'França': '🇫🇷', 'Alemanha': '🇩🇪',
         'Israel': '🇮🇱', 'Arábia Saudita': '🇸🇦', 'Argentina': '🇦🇷',
-        'México': '🇲🇽', 'Venezuela': '🇻🇪', 'Espanha': '🇪🇸', 'Itália': '🇮🇹'
+        'México': '🇲🇽', 'Venezuela': '🇻🇪', 'Espanha': '🇪🇸', 'Itália': '🇮🇹',
+        'África do Sul': '🇿🇦', 'Quênia': '🇰🇪', 'Congo': '🇨🇩', 'Índia': '🇮🇳',
+        'Japão': '🇯🇵', 'China': '🇨🇳', 'Coreia do Sul': '🇰🇷', 'Singapura': '🇸🇬',
+        'Hong Kong': '🇭🇰', 'Austrália': '🇦🇺', 'Nova Zelândia': '🇳🇿',
+        'Bélgica': '🇧🇪', 'Irã': '🇮🇷', 'Emirados': '🇦🇪'
     }
     
     # HTML dos destaques
@@ -415,23 +431,15 @@ def home():
         </article>
         '''
     
-    # HTML Esquerda (Antifa + Anarquista + Comunista)
-    esquerda_html = ''
-    for n in esquerda[:15]:
+    # HTML Movimentos Sociais
+    social_html = ''
+    for n in social[:15]:
         bandeira = bandeiras.get(n.get('pais', ''), '🌐')
-        # Define ícone baseado na categoria
-        if n.get('categoria') == 'antifa':
-            icone = '🏴'
-        elif n.get('categoria') == 'anarquista':
-            icone = '🖤'
-        else:
-            icone = '🔴'
-        
-        esquerda_html += f'''
+        social_html += f'''
         <article class="noticia">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n['fonte']}</span>
-                <span class="categoria-badge {n.get('categoria', '')}">{icone} {n.get('categoria', '')}</span>
+                <span class="pais">{n.get('pais', 'Global')}</span>
             </div>
             <h4>{n['titulo']}</h4>
             <p class="resumo">{n['resumo'][:120]}...</p>
@@ -442,9 +450,10 @@ def home():
         </article>
         '''
     
-    # Estatísticas
-    total_paises = len(set(n.get('pais', '') for n in noticias))
-    total_fontes = len(set(n.get('fonte', '') for n in noticias))
+    # HTML do mapa de continentes
+    continentes_html = ''
+    for cont, qtd in continentes.items():
+        continentes_html += f'<span class="contente-badge">{cont}: {qtd}</span>'
     
     return f'''
     <!DOCTYPE html>
@@ -452,8 +461,8 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="Notícias internacionais - Geopolítica, Antifa, Anarquismo e Comunismo">
-        <meta name="keywords" content="geopolítica, guerra, antifa, anarquismo, comunismo, notícias">
+        <meta name="description" content="Notícias internacionais - Radar Global">
+        <meta name="keywords" content="geopolítica, movimentos sociais, notícias, radar global">
         <meta name="author" content="SHARP - FRONT 16 RJ">
         <title>🔴 SHARP - FRONT 16 RJ</title>
         <style>
@@ -470,7 +479,7 @@ def home():
                 line-height: 1.6;
             }}
             
-            /* HEADER PROFISSIONAL */
+            /* HEADER PROFISSIONAL COM DUAS BOLAS */
             .header {{
                 background: linear-gradient(135deg, #000000 0%, #1a0000 100%);
                 border-bottom: 3px solid #ff0000;
@@ -480,20 +489,44 @@ def home():
                 overflow: hidden;
             }}
             
-            .header::before {{
-                content: '';
+            .bolas-container {{
                 position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: radial-gradient(circle, rgba(255,0,0,0.1) 0%, transparent 70%);
-                animation: rotate 20s linear infinite;
+                top: 20px;
+                right: 30px;
+                display: flex;
+                gap: 15px;
+                z-index: 10;
             }}
             
-            @keyframes rotate {{
-                from {{ transform: rotate(0deg); }}
-                to {{ transform: rotate(360deg); }}
+            .bola-vermelha {{
+                width: 60px;
+                height: 60px;
+                background: #ff0000;
+                border-radius: 50%;
+                box-shadow: 0 0 30px rgba(255,0,0,0.7);
+                animation: pulsar-vermelha 2s infinite ease-in-out;
+            }}
+            
+            .bola-preta {{
+                width: 60px;
+                height: 60px;
+                background: #000;
+                border-radius: 50%;
+                border: 2px solid #ff0000;
+                box-shadow: 0 0 30px rgba(255,0,0,0.3);
+                animation: pulsar-preta 2.5s infinite ease-in-out;
+            }}
+            
+            @keyframes pulsar-vermelha {{
+                0% {{ transform: scale(1); box-shadow: 0 0 30px rgba(255,0,0,0.7); }}
+                50% {{ transform: scale(1.1); box-shadow: 0 0 50px rgba(255,0,0,1); }}
+                100% {{ transform: scale(1); box-shadow: 0 0 30px rgba(255,0,0,0.7); }}
+            }}
+            
+            @keyframes pulsar-preta {{
+                0% {{ transform: scale(1); box-shadow: 0 0 30px rgba(255,0,0,0.3); }}
+                50% {{ transform: scale(1.05); box-shadow: 0 0 40px rgba(255,0,0,0.6); }}
+                100% {{ transform: scale(1); box-shadow: 0 0 30px rgba(255,0,0,0.3); }}
             }}
             
             h1 {{
@@ -516,7 +549,6 @@ def home():
                 z-index: 1;
             }}
             
-            /* STATS BAR */
             .stats-bar {{
                 display: flex;
                 justify-content: center;
@@ -544,7 +576,6 @@ def home():
                 box-shadow: 0 5px 20px rgba(255,0,0,0.3);
             }}
             
-            /* DESTAQUES */
             .destaques {{
                 max-width: 1400px;
                 margin: 40px auto;
@@ -603,7 +634,6 @@ def home():
                 margin-bottom: 15px;
             }}
             
-            /* CONTAINER PRINCIPAL */
             .container {{
                 max-width: 1400px;
                 margin: 0 auto;
@@ -613,7 +643,6 @@ def home():
                 gap: 40px;
             }}
             
-            /* COLUNAS */
             .coluna {{
                 background: rgba(17, 17, 17, 0.5);
                 backdrop-filter: blur(10px);
@@ -633,15 +662,6 @@ def home():
                 border-bottom: 2px solid #ff0000;
             }}
             
-            .coluna.geopolitica h2 {{
-                border-bottom-color: #ff0000;
-            }}
-            
-            .coluna.esquerda h2 {{
-                border-bottom-color: #ff0000;
-            }}
-            
-            /* NOTÍCIAS */
             .noticia {{
                 background: #111;
                 border-radius: 15px;
@@ -681,28 +701,6 @@ def home():
                 padding: 4px 12px;
                 border-radius: 20px;
                 font-size: 0.8rem;
-            }}
-            
-            .categoria-badge {{
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 0.8rem;
-                font-weight: 600;
-            }}
-            
-            .categoria-badge.antifa {{
-                background: #4a0000;
-                color: #ff9999;
-            }}
-            
-            .categoria-badge.anarquista {{
-                background: #2a2a2a;
-                color: #cccccc;
-            }}
-            
-            .categoria-badge.comunista {{
-                background: #8b0000;
-                color: #ffb3b3;
             }}
             
             h4 {{
@@ -747,7 +745,6 @@ def home():
                 color: #000;
             }}
             
-            /* MENSAGEM VAZIA */
             .mensagem-vazia {{
                 text-align: center;
                 padding: 60px 20px;
@@ -758,23 +755,17 @@ def home():
                 border: 1px dashed #333;
             }}
             
-            .loader {{
-                width: 48px;
-                height: 48px;
-                border: 3px solid #333;
-                border-bottom-color: #ff0000;
-                border-radius: 50%;
+            .contente-badge {{
                 display: inline-block;
-                animation: rotation 1s linear infinite;
-                margin: 20px auto;
+                background: #1a1a1a;
+                border: 1px solid #333;
+                padding: 5px 15px;
+                border-radius: 30px;
+                margin: 5px;
+                font-size: 0.8rem;
+                color: #ff0000;
             }}
             
-            @keyframes rotation {{
-                0% {{ transform: rotate(0deg); }}
-                100% {{ transform: rotate(360deg); }}
-            }}
-            
-            /* FOOTER */
             .footer {{
                 background: #000;
                 border-top: 3px solid #ff0000;
@@ -790,28 +781,6 @@ def home():
                 flex-wrap: wrap;
                 margin-bottom: 30px;
                 color: #888;
-            }}
-            
-            .footer-links {{
-                display: flex;
-                justify-content: center;
-                gap: 20px;
-                margin-bottom: 30px;
-                flex-wrap: wrap;
-            }}
-            
-            .footer-links a {{
-                color: #666;
-                font-size: 0.9rem;
-                padding: 5px 15px;
-                border: 1px solid #333;
-                border-radius: 30px;
-            }}
-            
-            .footer-links a:hover {{
-                background: #ff0000;
-                color: #000;
-                border-color: #ff0000;
             }}
             
             .agradecimento {{
@@ -836,7 +805,6 @@ def home():
                 font-size: 1.1rem;
             }}
             
-            /* RESPONSIVO */
             @media (max-width: 900px) {{
                 .container {{
                     grid-template-columns: 1fr;
@@ -844,6 +812,14 @@ def home():
                 
                 .destaques-grid {{
                     grid-template-columns: 1fr;
+                }}
+                
+                .bolas-container {{
+                    position: relative;
+                    top: 0;
+                    right: 0;
+                    justify-content: center;
+                    margin-bottom: 20px;
                 }}
             }}
             
@@ -862,17 +838,24 @@ def home():
     </head>
     <body>
         <div class="header">
+            <div class="bolas-container">
+                <div class="bola-vermelha"></div>
+                <div class="bola-preta"></div>
+            </div>
+            
             <h1>🔴 SHARP - FRONT 16 RJ</h1>
             <p class="subtitulo">📰 INFORMAÇÃO PRECIOSA PARA TODOS • GEOPOLÍTICA & MOVIMENTOS SOCIAIS</p>
             
             <div class="stats-bar">
                 <span class="stat-item">📰 {len(noticias)} notícias</span>
-                <span class="stat-item">🌍 {total_paises} países</span>
-                <span class="stat-item">📡 {total_fontes} fontes</span>
-                <span class="stat-item">⚔️ {len(geopolitica)} conflitos</span>
-                <span class="stat-item">🏴 {len(antifa)} antifa</span>
-                <span class="stat-item">🖤 {len(anarquista)} anarquista</span>
-                <span class="stat-item">🔴 {len(comunista)} comunista</span>
+                <span class="stat-item">🌍 {len(set(n.get('pais', '') for n in noticias))} países</span>
+                <span class="stat-item">📡 {len(set(n.get('fonte', '') for n in noticias))} fontes</span>
+                <span class="stat-item">⚔️ {len(geopolitica)} geopolitica</span>
+                <span class="stat-item">🏴 {len(social)} social</span>
+            </div>
+            
+            <div class="contente-badge-container">
+                {continentes_html}
             </div>
         </div>
         
@@ -880,23 +863,28 @@ def home():
         <div class="destaques">
             <h2>⭐ DESTAQUES DO DIA</h2>
             <div class="destaques-grid">
-                {destaques_html if destaques_html else '<div class="mensagem-vazia">🔍 Buscando destaques...</div>'}
+                {destaques_html if destaques_html else '<div class="mensagem-vazia">🛰️ Radar global em operação... buscando destaques...</div>'}
             </div>
         </div>
         
         <!-- COLUNAS PRINCIPAIS -->
         <div class="container">
             <!-- COLUNA GEOPOLÍTICA -->
-            <div class="coluna geopolitica">
+            <div class="coluna">
                 <h2>⚔️ GEOPOLÍTICA & GUERRA</h2>
-                {geo_html if geo_html else '<div class="mensagem-vazia">🔍 Buscando notícias de geopolítica...</div>'}
+                {geo_html if geo_html else '<div class="mensagem-vazia">🛰️ Escaneando conflitos globais...</div>'}
             </div>
             
-            <!-- COLUNA ESQUERDA (ANTIFA + ANARQUISTA + COMUNISTA) -->
-            <div class="coluna esquerda">
+            <!-- COLUNA MOVIMENTOS SOCIAIS -->
+            <div class="coluna">
                 <h2>🏴 MOVIMENTOS SOCIAIS</h2>
-                {esquerda_html if esquerda_html else '<div class="mensagem-vazia">🔍 Buscando notícias de movimentos sociais...</div>'}
+                {social_html if social_html else '<div class="mensagem-vazia">🛰️ Buscando movimentos sociais...</div>'}
             </div>
+        </div>
+        
+        <!-- ROTA DE TESTE PARA BUSCA -->
+        <div style="text-align: center; margin: 30px auto;">
+            <a href="/forcar-busca" style="display: inline-block; padding: 10px 30px; background: #ff0000; color: #000; border-radius: 30px; text-decoration: none; font-weight: bold;">🚀 ATIVAR RADAR GLOBAL</a>
         </div>
         
         <!-- ESPAÇO PARA IMAGEM -->
@@ -921,24 +909,17 @@ def home():
             <div class="footer-stats">
                 <span>📡 Atualização a cada {TEMPO_ATUALIZACAO} minutos</span>
                 <span>🔗 Links originais preservados</span>
-                <span>⚡ {len(geopolitica) + len(esquerda)} notícias no acervo</span>
-            </div>
-            
-            <div class="footer-links">
-                <a href="#">Sobre</a>
-                <a href="#">Fontes</a>
-                <a href="#">Contato</a>
-                <a href="#">Privacidade</a>
+                <span>⚡ {len(noticias)} notícias no acervo</span>
             </div>
             
             <p style="color: #444; font-size: 0.8rem; max-width: 800px; margin: 0 auto;">
-                🔴 SHARP - FRONT 16 RJ • Notícias Internacionais • Geopolítica, Antifa, Anarquismo e Comunismo
+                🔴 SHARP - FRONT 16 RJ • Radar Global de Notícias • Geopolítica & Movimentos Sociais
             </p>
             <p style="color: #333; font-size: 0.7rem; margin-top: 20px;">
                 Todos os links são das fontes originais • Conteúdo sob responsabilidade de cada veículo
             </p>
             <p style="color: #222; font-size: 0.6rem; margin-top: 10px;">
-                v5.0 • Busca via satélite informacional
+                v6.0 • Radar Global com Busca Paralela
             </p>
         </div>
     </body>
@@ -946,11 +927,36 @@ def home():
     '''
 
 # ============================================
-# ROTA PARA IMAGENS (quando adicionar)
+# ROTA PARA FORÇAR BUSCA (USE ISSO PARA TESTAR)
 # ============================================
-@app.route('/images/<path:filename>')
-def serve_image(filename):
-    return send_from_directory('static/images', filename)
+@app.route('/forcar-busca')
+def forcar_busca():
+    import threading
+    def busca_forcada():
+        buscar_noticias()
+    threading.Thread(target=busca_forcada).start()
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🔴 Radar Ativado</title>
+        <style>
+            body { background: black; color: white; font-family: Arial; text-align: center; padding: 50px; }
+            h1 { color: red; }
+            .info { background: #111; padding: 20px; border-radius: 10px; margin: 20px; }
+        </style>
+    </head>
+    <body>
+        <h1>🔴 SHARP - FRONT 16 RJ</h1>
+        <div class="info">
+            <h2>🛰️ RADAR GLOBAL ATIVADO!</h2>
+            <p>As notícias estão sendo coletadas agora em paralelo.</p>
+            <p>Volte para a página inicial e aguarde 1-2 minutos.</p>
+            <p><a href="/" style="color: red;">⬅️ Voltar para o site</a></p>
+        </div>
+    </body>
+    </html>
+    """
 
 # ============================================
 # API DE ESTATÍSTICAS
@@ -959,17 +965,14 @@ def serve_image(filename):
 def api_stats():
     noticias = carregar_noticias()
     geopolitica = [n for n in noticias if n.get('categoria') == 'geopolitica']
-    antifa = [n for n in noticias if n.get('categoria') == 'antifa']
-    anarquista = [n for n in noticias if n.get('categoria') == 'anarquista']
-    comunista = [n for n in noticias if n.get('categoria') == 'comunista']
+    social = [n for n in noticias if n.get('categoria') in ['social', 'geral']]
     
     return jsonify({
         'total': len(noticias),
         'geopolitica': len(geopolitica),
-        'antifa': len(antifa),
-        'anarquista': len(anarquista),
-        'comunista': len(comunista),
+        'social': len(social),
         'paises': len(set(n.get('pais', '') for n in noticias)),
+        'continentes': len(set(n.get('continente', '') for n in noticias)),
         'fontes': len(set(n.get('fonte', '') for n in noticias)),
         'ultima_atualizacao': datetime.now().isoformat()
     })
@@ -994,45 +997,10 @@ def inicializar():
     
     thread = threading.Thread(target=busca_background, daemon=True)
     thread.start()
-    logger.info("✅ Sistema de busca via satélite ativo")
-    logger.info("🌍 Modo: Busca global com proxy inteligente")
+    logger.info("✅ Sistema de radar global ativo")
+    logger.info("🌍 Modo: Busca paralela com 20 threads simultâneas")
 
 inicializar()
-
-# ============================================
-# FIM - NÃO COLOQUE app.run() AQUI!
-# ============================================
-# ============================================
-# ROTA PARA FORÇAR BUSCA (USE ISSO PARA TESTAR)
-# ============================================
-@app.route('/forcar-busca')
-def forcar_busca():
-    import threading
-    def busca_forcada():
-        buscar_noticias()
-    threading.Thread(target=busca_forcada).start()
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>🔴 Busca Iniciada</title>
-        <style>
-            body { background: black; color: white; font-family: Arial; text-align: center; padding: 50px; }
-            h1 { color: red; }
-            .info { background: #111; padding: 20px; border-radius: 10px; margin: 20px; }
-        </style>
-    </head>
-    <body>
-        <h1>🔴 SHARP - FRONT 16 RJ</h1>
-        <div class="info">
-            <h2>🚀 BUSCA INICIADA!</h2>
-            <p>As notícias estão sendo coletadas agora.</p>
-            <p>Volte para a página inicial e aguarde 1-2 minutos.</p>
-            <p><a href="/" style="color: red;">⬅️ Voltar para o site</a></p>
-        </div>
-    </body>
-    </html>
-    """
 
 # ============================================
 # FIM - NÃO COLOQUE app.run() AQUI!
