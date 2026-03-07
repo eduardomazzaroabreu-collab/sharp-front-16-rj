@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 20.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 21.0 - FINAL                    ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -371,14 +371,51 @@ class RadarAutomatico:
             titulo_original = entrada.title
             titulo_traduzido = tradutor.traduzir(titulo_original)
             
+            # ===== MELHORIA: EXTRAIR RESUMO DE MÚLTIPLAS FONTES =====
             resumo_original = ""
-            if hasattr(entrada, 'summary'):
+            
+            # Tenta extrair de summary
+            if hasattr(entrada, 'summary') and entrada.summary:
                 resumo_original = BeautifulSoup(entrada.summary, 'html.parser').get_text()
-            elif hasattr(entrada, 'description'):
+            
+            # Se não tem summary, tenta description
+            elif hasattr(entrada, 'description') and entrada.description:
                 resumo_original = BeautifulSoup(entrada.description, 'html.parser').get_text()
             
+            # Se não tem description, tenta content
+            elif hasattr(entrada, 'content') and entrada.content:
+                for content in entrada.content:
+                    if content.get('type') == 'text/html' and content.value:
+                        resumo_original = BeautifulSoup(content.value, 'html.parser').get_text()
+                        if resumo_original:
+                            break
+            
+            # Se ainda não tem resumo, usa o título ou uma mensagem padrão
+            if not resumo_original or len(resumo_original.strip()) < 20:
+                # Para Democracy Now e similares, cria um resumo a partir do título
+                if fonte['nome'] == 'Democracy Now':
+                    # Extrai informações do título
+                    if 'Headlines for' in titulo_original:
+                        data = titulo_original.replace('Headlines for', '').strip()
+                        resumo_original = f"Principais manchetes do dia {data}. Clique para ver as notícias completas."
+                    elif ':' in titulo_original:
+                        partes = titulo_original.split(':', 1)
+                        assunto = partes[0].strip()
+                        resumo_original = f"Reportagem especial sobre {assunto}. Clique para ler a matéria completa."
+                    else:
+                        resumo_original = f"Notícia: {titulo_original[:100]}... Clique para ler o artigo completo."
+                else:
+                    # Para outras fontes sem resumo
+                    resumo_original = f"Leia o artigo completo sobre: {titulo_original[:100]}..."
+            
+            # Traduz o resumo
             resumo_traduzido = tradutor.traduzir(resumo_original) if resumo_original else ""
-            resumo_traduzido = resumo_traduzido[:200] + "..." if resumo_traduzido and len(resumo_traduzido) > 200 else resumo_traduzido or "Leia o artigo completo..."
+            
+            # Limita o tamanho e adiciona reticências
+            if resumo_traduzido and len(resumo_traduzido) > 200:
+                resumo_traduzido = resumo_traduzido[:200] + "..."
+            elif not resumo_traduzido:
+                resumo_traduzido = "Clique para ler o artigo completo sobre esta notícia."
             
             return Noticia(
                 id=hashlib.md5(entrada.link.encode()).hexdigest()[:8],
@@ -394,7 +431,8 @@ class RadarAutomatico:
                 data=entrada.get('published', datetime.now().strftime('%Y-%m-%d %H:%M')),
                 publicada_em=horario_brasilia()
             )
-        except:
+        except Exception as e:
+            logger.debug(f"Erro ao criar noticia: {e}")
             return None
     
     def _carregar_noticias(self):
@@ -707,7 +745,7 @@ def home():
             
             .simbolo-comunista {{
                 color: #ff0000;
-                font-size: 2.9rem;
+                font-size: 2.2rem;
                 filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
                 line-height: 1;
                 display: inline-block;
@@ -1243,7 +1281,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v20.0 • Notícias em Português</div>
+            <div class="footer-versao">v21.0 • Notícias em Português</div>
         </div>
 
         <script>
@@ -1374,7 +1412,7 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v20.0")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v21.0")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
@@ -1389,6 +1427,7 @@ def inicializar():
     anti_sono.iniciar()
     logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
     logger.info("✅ Tradutor ativo - Notícias em Português")
+    logger.info("✅ Resumos inteligentes - Todas as notícias têm descrição")
     logger.info("="*70)
 
 inicializar()
