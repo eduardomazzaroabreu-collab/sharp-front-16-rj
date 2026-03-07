@@ -392,18 +392,49 @@ class RadarAutomatico:
             
             # Se ainda não tem resumo, usa o título ou uma mensagem padrão
             if not resumo_original or len(resumo_original.strip()) < 20:
-                # Para Democracy Now e similares, cria um resumo a partir do título
-                if fonte['nome'] == 'Democracy Now':
-                    # Extrai informações do título
-                    if 'Headlines for' in titulo_original:
-                        data = titulo_original.replace('Headlines for', '').strip()
-                        resumo_original = f"Principais manchetes do dia {data}. Clique para ver as notícias completas."
-                    elif ':' in titulo_original:
-                        partes = titulo_original.split(':', 1)
-                        assunto = partes[0].strip()
-                        resumo_original = f"Reportagem especial sobre {assunto}. Clique para ler a matéria completa."
-                    else:
-                        resumo_original = f"Notícia: {titulo_original[:100]}... Clique para ler o artigo completo."
+                # Para Democracy Now e similares, cria um resumo mais informativo
+if fonte['nome'] == 'Democracy Now':
+    # Extrai informações do título de forma mais inteligente
+    titulo_lower = titulo_original.lower()
+    
+    # Tenta identificar o tipo de conteúdo
+    if 'headlines for' in titulo_lower:
+        # Ex: "Headlines for March 04, 2026"
+        data = titulo_original.replace('Headlines for', '').replace('Headlines', '').strip()
+        resumo_original = f"Resumo das principais notícias do dia {data}. Inclui reportagens sobre conflitos internacionais, política e direitos humanos."
+    
+    elif ':' in titulo_original:
+        # Ex: "Who Bombed Girls' School in Iran? Reporter Nilo Tabrizy on What We Know About Massacre"
+        partes = titulo_original.split(':', 1)
+        pergunta = partes[0].strip()
+        contexto = partes[1].strip() if len(partes) > 1 else ""
+        
+        # Cria um resumo baseado na pergunta
+        if '?' in pergunta:
+            resumo_original = f"Reportagem investigativa: {pergunta} {contexto[:100]}. Entrevista exclusiva com especialistas sobre o caso."
+        else:
+            resumo_original = f"Reportagem especial sobre {pergunta}. {contexto[:100]}... Clique para ler a matéria completa."
+    
+    elif 'interview' in titulo_lower or 'conversation' in titulo_lower:
+        # Ex: "Interview with Noam Chomsky on US Foreign Policy"
+        resumo_original = f"Entrevista exclusiva: {titulo_original}. Discussão aprofundada sobre o tema com especialista."
+    
+    elif 'report' in titulo_lower or 'investigation' in titulo_lower:
+        # Ex: "Investigation Reveals New Details About Drone Strike"
+        resumo_original = f"Reportagem investigativa: {titulo_original}. Novas informações e análises exclusivas."
+    
+    elif 'update' in titulo_lower or 'latest' in titulo_lower:
+        # Ex: "Latest Updates on Iran Conflict"
+        resumo_original = f"Atualizações sobre {titulo_original}. Acompanhe os últimos acontecimentos."
+    
+    else:
+        # Para outros casos, tenta extrair o assunto principal
+        palavras = titulo_original.split()
+        if len(palavras) > 5:
+            assunto = ' '.join(palavras[:5])
+            resumo_original = f"Notícia: {assunto}... {titulo_original}. Clique para ler a matéria completa com análises e contexto."
+        else:
+            resumo_original = f"Notícia: {titulo_original}. Clique para ler o artigo completo com detalhes e análises."
                 else:
                     # Para outras fontes sem resumo
                     resumo_original = f"Leia o artigo completo sobre: {titulo_original[:100]}..."
