@@ -707,7 +707,7 @@ def home():
             
             .simbolo-comunista {{
                 color: #ff0000;
-                font-size: 2.2rem;
+                font-size: 2.9rem;
                 filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
                 line-height: 1;
                 display: inline-block;
