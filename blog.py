@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 15.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 17.0 - FINAL                    ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -35,19 +35,41 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ============================================
-# TRADUTOR SIMPLES (PARA NOTÍCIAS EM PORTUGUÊS)
+# TRADUTOR INTEGRADO (GOOGLE TRANSLATE)
 # ============================================
 
-class TradutorSimples:
-    """Tradutor simples para português (versão básica)"""
+class TradutorIntegrado:
+    """Tradutor usando Google Translate (gratuito)"""
     
     @staticmethod
-    def traduzir(texto):
-        """Versão simplificada - apenas retorna o texto original"""
-        # Em uma versão futura, pode-se integrar Google Translate
-        return texto
+    def traduzir(texto, idioma_destino='pt'):
+        """Traduz texto para português usando Google Translate"""
+        if not texto or len(texto) < 10:
+            return texto
+        
+        try:
+            # URL do Google Translate (versão simples)
+            url = "https://translate.googleapis.com/translate_a/single"
+            params = {
+                'client': 'gtx',
+                'sl': 'auto',
+                'tl': idioma_destino,
+                'dt': 't',
+                'q': texto
+            }
+            
+            response = requests.get(url, params=params, timeout=5)
+            if response.status_code == 200:
+                result = response.json()
+                # Extrai o texto traduzido do JSON
+                if result and len(result) > 0 and len(result[0]) > 0:
+                    return result[0][0][0]
+        except Exception as e:
+            logger.debug(f"Erro na tradução: {e}")
+        
+        return texto  # Se falhar, retorna original
 
-tradutor = TradutorSimples()
+tradutor = TradutorIntegrado()
 
 # ============================================
 # CONFIGURACOES PROFISSIONAIS AVANCADAS
@@ -270,8 +292,10 @@ class Noticia:
     pais: str
     continente: str
     categoria: str
-    titulo: str
-    resumo: str
+    titulo: str          # Título em português
+    titulo_original: str  # Título original (inglês/espanhol/etc)
+    resumo: str           # Resumo em português
+    resumo_original: str  # Resumo original
     link: str
     data: str
     publicada_em: str
@@ -387,24 +411,21 @@ class RadarAutomatico:
             logger.info(f"  Total: {len(todas_noticias)}")
     
     def _criar_noticia(self, fonte, entrada):
-        """Cria objeto de noticia com tradução para português"""
+        """Cria objeto de noticia com TRADUÇÃO para português"""
         try:
-            # Título original
+            # Título original e traduzido
             titulo_original = entrada.title
+            titulo_traduzido = tradutor.traduzir(titulo_original)
             
-            # Tradução simples (por enquanto mantém original)
-            titulo = tradutor.traduzir(titulo_original)
-            
-            # Resumo
+            # Resumo original e traduzido
             resumo_original = ""
             if hasattr(entrada, 'summary'):
                 resumo_original = BeautifulSoup(entrada.summary, 'html.parser').get_text()
             elif hasattr(entrada, 'description'):
                 resumo_original = BeautifulSoup(entrada.description, 'html.parser').get_text()
             
-            # Tradução do resumo
-            resumo = tradutor.traduzir(resumo_original)
-            resumo = resumo[:200] + "..." if resumo and len(resumo) > 200 else resumo or "Leia o artigo completo..."
+            resumo_traduzido = tradutor.traduzir(resumo_original) if resumo_original else ""
+            resumo_traduzido = resumo_traduzido[:200] + "..." if resumo_traduzido and len(resumo_traduzido) > 200 else resumo_traduzido or "Leia o artigo completo..."
             
             return Noticia(
                 id=hashlib.md5(entrada.link.encode()).hexdigest()[:8],
@@ -412,13 +433,16 @@ class RadarAutomatico:
                 pais=fonte['pais'],
                 continente=fonte['continente'],
                 categoria=fonte['categoria'],
-                titulo=titulo,
-                resumo=resumo,
+                titulo=titulo_traduzido,
+                titulo_original=titulo_original,
+                resumo=resumo_traduzido,
+                resumo_original=resumo_original[:200] + "..." if resumo_original and len(resumo_original) > 200 else resumo_original,
                 link=entrada.link,
                 data=entrada.get('published', datetime.now().strftime('%Y-%m-%d %H:%M')),
                 publicada_em=horario_brasilia()
             )
-        except:
+        except Exception as e:
+            logger.debug(f"Erro ao criar noticia: {e}")
             return None
     
     def _carregar_noticias(self):
@@ -506,7 +530,7 @@ def ping():
     })
 
 # ============================================
-# PAGINA PRINCIPAL - VERSÃO FINAL
+# PAGINA PRINCIPAL - VERSÃO FINAL COM NOTÍCIAS EM PT
 # ============================================
 
 @app.route('/')
@@ -529,6 +553,7 @@ def home():
             <span class="destaque-tag">⭐ DESTAQUE</span>
             <div class="destaque-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
+                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
             </div>
             <h3>{n.titulo}</h3>
             <p class="resumo">{n.resumo[:150]}...</p>
@@ -559,6 +584,7 @@ def home():
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">[{n.pais}]</span>
+                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
@@ -578,6 +604,7 @@ def home():
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">[{n.pais}]</span>
+                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
@@ -596,7 +623,8 @@ def home():
         <div class="noticia nacional" data-categoria="{n.categoria}" data-pais="Brasil">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">[Brasil]</span>
+                <span class="pais">[BR]</span>
+                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
@@ -616,6 +644,7 @@ def home():
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">[{n.pais}]</span>
+                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
             </div>
             <h4>{n.titulo}</h4>
             <p class="resumo">{n.resumo[:120]}...</p>
@@ -731,40 +760,48 @@ def home():
                 margin-top: 3px;
             }}
             
-            /* TÍTULO COM DUAS CORES */
+            /* TÍTULO COM SIMBOLOS */
             .titulo-container {{
-                display: inline-block;
-                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 5px;
+                margin-bottom: 5px;
+                flex-wrap: wrap;
+            }}
+            
+            .simbolo-anarquista {{
+                color: #ff0000;
+                font-size: 1.8rem;
+                filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
+            }}
+            
+            .simbolo-comunista {{
+                color: #ff0000;
+                font-size: 1.8rem;
+                filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
             }}
             
             .titulo-vermelho {{
                 color: #ff0000;
-                font-size: clamp(1.8rem, 5vw, 3rem);
+                font-size: clamp(1.5rem, 4vw, 2.5rem);
                 font-weight: 900;
                 letter-spacing: 2px;
-                display: inline;
                 text-shadow: 2px 2px 0px #000;
             }}
             
-            .titulo-preto {{
-                color: #ffffff;
-                font-size: clamp(1.8rem, 5vw, 3rem);
+            .separador {{
+                color: #ff0000;
+                font-size: clamp(1.5rem, 4vw, 2.5rem);
                 font-weight: 900;
-                letter-spacing: 2px;
-                display: inline;
-                text-shadow: 2px 2px 0px #ff0000;
             }}
             
-            .subtitulo {{
-                color: #ccc;
-                font-size: 1rem;
-                margin: 10px 0 15px;
-                position: relative;
-                z-index: 1;
-                font-style: italic;
-                border-bottom: 1px solid #ff0000;
-                display: inline-block;
-                padding-bottom: 5px;
+            .titulo-branco {{
+                color: #ffffff;
+                font-size: clamp(1.2rem, 3.5vw, 2rem);
+                font-weight: 700;
+                margin-top: 5px;
+                text-shadow: 1px 1px 0px #ff0000;
             }}
             
             .horario-header {{
@@ -778,6 +815,18 @@ def home():
                 border-radius: 20px;
                 border: 1px solid #ff0000;
                 z-index: 10;
+            }}
+            
+            /* TOOLTIP PARA TÍTULO ORIGINAL */
+            .tooltip {{
+                cursor: help;
+                font-size: 0.8rem;
+                opacity: 0.7;
+                transition: opacity 0.3s;
+            }}
+            
+            .tooltip:hover {{
+                opacity: 1;
             }}
             
             /* FILTROS - BOTÕES CLICÁVEIS */
@@ -1101,7 +1150,7 @@ def home():
                 to {{ transform: rotate(360deg); }}
             }}
             
-            /* RODAPÉ COM INSTAGRAM */
+            /* RODAPÉ COM INSTAGRAM VERMELHO */
             .footer {{
                 background: #000;
                 border-top: 4px solid #ff0000;
@@ -1114,25 +1163,21 @@ def home():
                 display: inline-block;
                 margin: 15px 0;
                 padding: 10px 25px;
-                background: linear-gradient(45deg, #833ab4, #e1306c, #fd1d1d);
-                color: white;
+                background: #ff0000;
+                color: #000;
                 text-decoration: none;
                 border-radius: 40px;
                 font-weight: bold;
                 font-size: 1rem;
                 transition: all 0.3s;
-                border: 2px solid transparent;
+                border: 2px solid #ff0000;
             }}
             
             .instagram-link:hover {{
+                background: #000;
+                color: #ff0000;
                 transform: scale(1.05);
-                border-color: #ff0000;
-                box-shadow: 0 0 20px rgba(255,0,0,0.3);
-            }}
-            
-            .instagram-link i {{
-                margin-right: 8px;
-                font-size: 1.2rem;
+                box-shadow: 0 0 20px rgba(255,0,0,0.5);
             }}
             
             .footer-stats {{
@@ -1199,7 +1244,12 @@ def home():
                     height: 70px;
                 }}
                 
-                .titulo-vermelho, .titulo-preto {{
+                .titulo-container {{
+                    flex-direction: column;
+                    gap: 2px;
+                }}
+                
+                .simbolo-anarquista, .simbolo-comunista {{
                     font-size: 1.5rem;
                 }}
                 
@@ -1229,10 +1279,13 @@ def home():
             </div>
             
             <div class="titulo-container">
-                <span class="titulo-vermelho">SHARP -</span>
-                <span class="titulo-preto"> FRONT 16 RJ</span>
+                <span class="simbolo-anarquista">Ⓐ</span>
+                <span class="titulo-vermelho">SHARP - FRONT 16</span>
+                <span class="separador">/</span>
+                <span class="titulo-vermelho">RJ</span>
+                <span class="simbolo-comunista">☭</span>
             </div>
-            <p class="subtitulo">Informação Antifascista</p>
+            <div class="titulo-branco">Informação Antifascista</div>
             
             <!-- FILTROS CLICÁVEIS -->
             <div class="filtros-container" id="filtros">
@@ -1249,7 +1302,7 @@ def home():
                     🏴 ANTIFA <span class="contador">{len(antifa)}</span>
                 </button>
                 <button class="filtro-btn" data-filtro="nacional" onclick="filtrarNoticias('nacional')">
-                    🇧🇷 NACIONAL <span class="contador">{len(nacionais)}</span>
+                    🇧🇷 BR NACIONAL <span class="contador">{len(nacionais)}</span>
                 </button>
                 <button class="filtro-btn" data-filtro="internacional" onclick="filtrarNoticias('internacional')">
                     🌎 INTERNACIONAL <span class="contador">{len(internacionais)}</span>
@@ -1300,7 +1353,7 @@ def home():
             <!-- COLUNA NACIONAL -->
             <div class="coluna" id="coluna-nacional" data-categoria="nacional">
                 <h2>
-                    🇧🇷 Nacional
+                    🇧🇷 BR NACIONAL
                     <span class="badge" id="contador-nacional">{len(nacionais)}</span>
                 </h2>
                 <div id="noticias-nacional">
@@ -1322,9 +1375,9 @@ def home():
         
         <!-- RODAPÉ -->
         <div class="footer">
-            <!-- LINK DO INSTAGRAM -->
+            <!-- LINK DO INSTAGRAM VERMELHO -->
             <a href="https://www.instagram.com/sharp.front16.rj?igsh=MXd1cjF2aTI2OGc1eQ==" target="_blank" class="instagram-link">
-                <span style="font-size: 1.2rem;">📷</span> @sharp.front16.rj
+                @sharp.front16.rj
             </a>
             
             <div class="footer-stats">
@@ -1340,7 +1393,7 @@ def home():
                 Links originais preservados
             </div>
             <div class="footer-versao">
-                v15.0 • Filtros Interativos
+                v17.0 • Notícias em Português
             </div>
         </div>
 
@@ -1499,7 +1552,7 @@ def api_stats():
 def inicializar():
     """Inicializa o sistema"""
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v15.0")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v17.0")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
@@ -1514,7 +1567,7 @@ def inicializar():
     anti_sono = SistemaAntiSono()
     anti_sono.iniciar()
     logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
-    
+    logger.info("✅ Tradutor ativo - Notícias em Português")
     logger.info("="*70)
 
 inicializar()
