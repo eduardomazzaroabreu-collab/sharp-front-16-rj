@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 22.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 23.0 - FINAL                    ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -832,12 +832,12 @@ def home():
                 box-shadow: 0 5px 15px rgba(255,0,0,0.4);
             }}
             
-            .filtro-btn.ativo {
-    background: transparent;
-    color: #ffffff;
-    border-color: #ff0000;
-    /* font-weight: bold; */  /* ← AGORA COMENTADO */
-}
+            .filtro-btn.ativo {{
+                background: transparent;
+                color: #ffffff;
+                border-color: #ff0000;
+                /* font-weight: bold; REMOVIDO PARA FICAR IGUAL AOS OUTROS */
+            }}
             
             .filtro-btn .contador {{
                 background: rgba(0,0,0,0.3);
@@ -1281,7 +1281,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v22.0 • Notícias em Português</div>
+            <div class="footer-versao">v23.0 • Notícias em Português</div>
         </div>
 
         <script>
@@ -1412,7 +1412,7 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v22.0")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v23.0")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
