@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 19.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 20.0 - FINAL                    ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -556,7 +556,7 @@ def home():
         <div class="noticia nacional" data-categoria="{n.categoria}" data-pais="Brasil">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">BR NACIONAL</span>
+                <span class="pais">BRASIL</span>
                 <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
             </div>
             <h4>{n.titulo}</h4>
@@ -707,11 +707,11 @@ def home():
             
             .simbolo-comunista {{
                 color: #ff0000;
-                font-size: 2.9rem;  /* ← MESMO TAMANHO DO ANARQUISMO! */
+                font-size: 2.2rem;
                 filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
                 line-height: 1;
                 display: inline-block;
-                transform: translateY(2px);  /* Pequeno ajuste visual */
+                transform: translateY(2px);
             }}
             
             .titulo-vermelho {{
@@ -795,9 +795,10 @@ def home():
             }}
             
             .filtro-btn.ativo {{
-                background: #ff0000;
-                color: #000;
-                border-color: #fff;
+                background: transparent;
+                color: #ffffff;
+                border-color: #ff0000;
+                font-weight: bold;
             }}
             
             .filtro-btn .contador {{
@@ -1203,7 +1204,7 @@ def home():
                 <button class="filtro-btn" data-filtro="destaques" onclick="filtrarNoticias('destaques')">⭐ DESTAQUES <span class="contador">{len(destaques)}</span></button>
                 <button class="filtro-btn" data-filtro="geopolitica" onclick="filtrarNoticias('geopolitica')">⚔️ GEOPOLÍTICA <span class="contador">{len(geopolitica)}</span></button>
                 <button class="filtro-btn" data-filtro="antifa" onclick="filtrarNoticias('antifa')">🏴 ANTIFA <span class="contador">{len(antifa)}</span></button>
-                <button class="filtro-btn" data-filtro="nacional" onclick="filtrarNoticias('nacional')">🇧🇷 BR NACIONAL <span class="contador">{len(nacionais)}</span></button>
+                <button class="filtro-btn" data-filtro="nacional" onclick="filtrarNoticias('nacional')">🇧🇷 BRASIL <span class="contador">{len(nacionais)}</span></button>
                 <button class="filtro-btn" data-filtro="internacional" onclick="filtrarNoticias('internacional')">🌎 INTERNACIONAL <span class="contador">{len(internacionais)}</span></button>
             </div>
             
@@ -1225,7 +1226,7 @@ def home():
                 <div id="noticias-antifa">{antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando movimentos...</p></div>'}</div>
             </div>
             <div class="coluna" id="coluna-nacional" data-categoria="nacional">
-                <h2> BR NACIONAL <span class="badge" id="contador-nacional">{len(nacionais)}</span></h2>
+                <h2>🇧🇷 BRASIL <span class="badge" id="contador-nacional">{len(nacionais)}</span></h2>
                 <div id="noticias-nacional">{nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias nacionais...</p></div>'}</div>
             </div>
             <div class="coluna" id="coluna-internacional" data-categoria="internacional">
@@ -1242,7 +1243,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v19.0 • Notícias em Português</div>
+            <div class="footer-versao">v20.0 • Notícias em Português</div>
         </div>
 
         <script>
@@ -1373,7 +1374,7 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v19.0")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v20.0")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
