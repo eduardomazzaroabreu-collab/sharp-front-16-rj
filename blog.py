@@ -1225,7 +1225,7 @@ def home():
                 <div id="noticias-antifa">{antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando movimentos...</p></div>'}</div>
             </div>
             <div class="coluna" id="coluna-nacional" data-categoria="nacional">
-                <h2>🇧🇷 BR NACIONAL <span class="badge" id="contador-nacional">{len(nacionais)}</span></h2>
+                <h2> BR NACIONAL <span class="badge" id="contador-nacional">{len(nacionais)}</span></h2>
                 <div id="noticias-nacional">{nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias nacionais...</p></div>'}</div>
             </div>
             <div class="coluna" id="coluna-internacional" data-categoria="internacional">
