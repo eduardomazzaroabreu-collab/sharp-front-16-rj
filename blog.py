@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 23.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 24.0 - FINAL                    ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -392,49 +392,49 @@ class RadarAutomatico:
             
             # Se ainda não tem resumo, usa o título ou uma mensagem padrão
             if not resumo_original or len(resumo_original.strip()) < 20:
-                # Para Democracy Now e similares, cria um resumo mais informativo
-if fonte['nome'] == 'Democracy Now':
-    # Extrai informações do título de forma mais inteligente
-    titulo_lower = titulo_original.lower()
-    
-    # Tenta identificar o tipo de conteúdo
-    if 'headlines for' in titulo_lower:
-        # Ex: "Headlines for March 04, 2026"
-        data = titulo_original.replace('Headlines for', '').replace('Headlines', '').strip()
-        resumo_original = f"Resumo das principais notícias do dia {data}. Inclui reportagens sobre conflitos internacionais, política e direitos humanos."
-    
-    elif ':' in titulo_original:
-        # Ex: "Who Bombed Girls' School in Iran? Reporter Nilo Tabrizy on What We Know About Massacre"
-        partes = titulo_original.split(':', 1)
-        pergunta = partes[0].strip()
-        contexto = partes[1].strip() if len(partes) > 1 else ""
-        
-        # Cria um resumo baseado na pergunta
-        if '?' in pergunta:
-            resumo_original = f"Reportagem investigativa: {pergunta} {contexto[:100]}. Entrevista exclusiva com especialistas sobre o caso."
-        else:
-            resumo_original = f"Reportagem especial sobre {pergunta}. {contexto[:100]}... Clique para ler a matéria completa."
-    
-    elif 'interview' in titulo_lower or 'conversation' in titulo_lower:
-        # Ex: "Interview with Noam Chomsky on US Foreign Policy"
-        resumo_original = f"Entrevista exclusiva: {titulo_original}. Discussão aprofundada sobre o tema com especialista."
-    
-    elif 'report' in titulo_lower or 'investigation' in titulo_lower:
-        # Ex: "Investigation Reveals New Details About Drone Strike"
-        resumo_original = f"Reportagem investigativa: {titulo_original}. Novas informações e análises exclusivas."
-    
-    elif 'update' in titulo_lower or 'latest' in titulo_lower:
-        # Ex: "Latest Updates on Iran Conflict"
-        resumo_original = f"Atualizações sobre {titulo_original}. Acompanhe os últimos acontecimentos."
-    
-    else:
-        # Para outros casos, tenta extrair o assunto principal
-        palavras = titulo_original.split()
-        if len(palavras) > 5:
-            assunto = ' '.join(palavras[:5])
-            resumo_original = f"Notícia: {assunto}... {titulo_original}. Clique para ler a matéria completa com análises e contexto."
-        else:
-            resumo_original = f"Notícia: {titulo_original}. Clique para ler o artigo completo com detalhes e análises."
+                # ===== VERSÃO MELHORADA PARA DEMOCRACY NOW =====
+                if fonte['nome'] == 'Democracy Now':
+                    # Extrai informações do título de forma mais inteligente
+                    titulo_lower = titulo_original.lower()
+                    
+                    # Tenta identificar o tipo de conteúdo
+                    if 'headlines for' in titulo_lower:
+                        # Ex: "Headlines for March 04, 2026"
+                        data = titulo_original.replace('Headlines for', '').replace('Headlines', '').strip()
+                        resumo_original = f"Resumo das principais notícias do dia {data}. Inclui reportagens sobre conflitos internacionais, política e direitos humanos."
+                    
+                    elif ':' in titulo_original:
+                        # Ex: "Who Bombed Girls' School in Iran? Reporter Nilo Tabrizy on What We Know About Massacre"
+                        partes = titulo_original.split(':', 1)
+                        pergunta = partes[0].strip()
+                        contexto = partes[1].strip() if len(partes) > 1 else ""
+                        
+                        # Cria um resumo baseado na pergunta
+                        if '?' in pergunta:
+                            resumo_original = f"Reportagem investigativa: {pergunta} {contexto[:100]}. Entrevista exclusiva com especialistas sobre o caso."
+                        else:
+                            resumo_original = f"Reportagem especial sobre {pergunta}. {contexto[:100]}... Clique para ler a matéria completa."
+                    
+                    elif 'interview' in titulo_lower or 'conversation' in titulo_lower:
+                        # Ex: "Interview with Noam Chomsky on US Foreign Policy"
+                        resumo_original = f"Entrevista exclusiva: {titulo_original}. Discussão aprofundada sobre o tema com especialista."
+                    
+                    elif 'report' in titulo_lower or 'investigation' in titulo_lower:
+                        # Ex: "Investigation Reveals New Details About Drone Strike"
+                        resumo_original = f"Reportagem investigativa: {titulo_original}. Novas informações e análises exclusivas."
+                    
+                    elif 'update' in titulo_lower or 'latest' in titulo_lower:
+                        # Ex: "Latest Updates on Iran Conflict"
+                        resumo_original = f"Atualizações sobre {titulo_original}. Acompanhe os últimos acontecimentos."
+                    
+                    else:
+                        # Para outros casos, tenta extrair o assunto principal
+                        palavras = titulo_original.split()
+                        if len(palavras) > 5:
+                            assunto = ' '.join(palavras[:5])
+                            resumo_original = f"Notícia: {assunto}... {titulo_original}. Clique para ler a matéria completa com análises e contexto."
+                        else:
+                            resumo_original = f"Notícia: {titulo_original}. Clique para ler o artigo completo com detalhes e análises."
                 else:
                     # Para outras fontes sem resumo
                     resumo_original = f"Leia o artigo completo sobre: {titulo_original[:100]}..."
@@ -867,7 +867,6 @@ def home():
                 background: transparent;
                 color: #ffffff;
                 border-color: #ff0000;
-                /* font-weight: bold; REMOVIDO PARA FICAR IGUAL AOS OUTROS */
             }}
             
             .filtro-btn .contador {{
@@ -1312,7 +1311,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v23.0 • Notícias em Português</div>
+            <div class="footer-versao">v24.0 • Notícias em Português</div>
         </div>
 
         <script>
@@ -1443,7 +1442,7 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v23.0")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v24.0")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
@@ -1458,7 +1457,7 @@ def inicializar():
     anti_sono.iniciar()
     logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
     logger.info("✅ Tradutor ativo - Notícias em Português")
-    logger.info("✅ Resumos inteligentes - Todas as notícias têm descrição")
+    logger.info("✅ Resumos inteligentes - Democracy Now com descrições detalhadas")
     logger.info("="*70)
 
 inicializar()
