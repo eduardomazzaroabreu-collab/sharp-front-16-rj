@@ -9,8 +9,528 @@
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
 
-# [Toda a parte inicial do código permanece IGUAL até a função home]
-# ...
+from flask import Flask, jsonify, request, send_from_directory
+from datetime import datetime, timedelta
+import os
+import random
+import feedparser
+from bs4 import BeautifulSoup
+import threading
+import time
+import json
+import requests
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+import logging
+from collections import Counter, defaultdict
+import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
+from typing import Dict, List, Set, Optional, Any, Tuple
+from dataclasses import dataclass, field, asdict
+import queue
+from urllib.parse import urlparse, quote_plus
+import html
+import warnings
+warnings.filterwarnings('ignore')
+
+# ============================================
+# CRIAÇÃO DO APP FLASK - DEVE VIR ANTES DAS ROTAS!
+# ============================================
+app = Flask(__name__)
+
+# ============================================
+# TRADUTOR INTEGRADO (GOOGLE TRANSLATE)
+# ============================================
+
+class TradutorIntegrado:
+    """Tradutor usando Google Translate (gratuito)"""
+    
+    @staticmethod
+    def traduzir(texto, idioma_destino='pt'):
+        """Traduz texto para português usando Google Translate"""
+        if not texto or len(texto) < 10:
+            return texto
+        
+        try:
+            # URL do Google Translate (versão simples)
+            url = "https://translate.googleapis.com/translate_a/single"
+            params = {
+                'client': 'gtx',
+                'sl': 'auto',
+                'tl': idioma_destino,
+                'dt': 't',
+                'q': texto
+            }
+            
+            response = requests.get(url, params=params, timeout=5)
+            if response.status_code == 200:
+                result = response.json()
+                # Extrai o texto traduzido do JSON
+                if result and len(result) > 0 and len(result[0]) > 0:
+                    return result[0][0][0]
+        except Exception as e:
+            logger.debug(f"Erro na tradução: {e}")
+        
+        return texto  # Se falhar, retorna original
+
+tradutor = TradutorIntegrado()
+
+# ============================================
+# CONFIGURACOES PROFISSIONAIS AVANCADAS
+# ============================================
+
+class Config:
+    """Configuracoes avancadas do sistema supremo antifa"""
+    
+    # Identidade
+    NOME_SITE = "SHARP - FRONT 16 RJ"
+    LEMA = "A informacao e nossa arma mais poderosa"
+    
+    # Arquivos
+    ARQUIVO_NOTICIAS = 'noticias_salvas.json'
+    ARQUIVO_CACHE = 'cache_fontes.json'
+    ARQUIVO_HISTORICO = 'historico_buscas.json'
+    ARQUIVO_LOG = 'radar_antifa.log'
+    
+    # Tempos
+    TEMPO_ATUALIZACAO = 10  # minutos
+    TIMEOUT_REQUISICAO = 8  # segundos
+    TIMEOUT_TOTAL = 30  # segundos
+    DELAY_ENTRE_REQUISICOES = 5  # 5 segundos entre cada site
+    DELAY_INICIAL = 2  # segundos antes de comecar
+    
+    # Limites
+    MAX_NOTICIAS_POR_FONTE = 5
+    MAX_NOTICIAS_TOTAL = 3000
+    MAX_TRABALHADORES = 10
+    MAX_TENTATIVAS = 2
+    
+    # Headers para parecer navegador real
+    HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8,es;q=0.7,fr;q=0.6',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+    }
+    
+    # Horario
+    TIMEZONE = -3  # Brasilia (UTC-3)
+
+config = Config()
+
+# ============================================
+# FUNCAO PARA HORARIO DE BRASILIA
+# ============================================
+
+def horario_brasilia():
+    """Retorna o horario atual de Brasilia"""
+    utc = datetime.utcnow()
+    brasilia = utc - timedelta(hours=3)
+    return brasilia.strftime('%d/%m/%Y %H:%M:%S')
+
+def hora_brasilia():
+    """Retorna apenas a hora de Brasilia"""
+    utc = datetime.utcnow()
+    brasilia = utc - timedelta(hours=3)
+    return brasilia.strftime('%H:%M')
+
+# ============================================
+# LOGGING PROFISSIONAL
+# ============================================
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - [%(levelname)s] - %(message)s',
+    handlers=[
+        logging.FileHandler(config.ARQUIVO_LOG),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('ANTIFA-RADAR')
+
+# ============================================
+# PALAVRAS PROIBIDAS (FILTRO DE CASINO E SPAM)
+# ============================================
+
+PALAVRAS_PROIBIDAS = [
+    'casino', 'cassino', 'bet', 'aposta', 'gambling', 'poker', 'slot',
+    'roulette', 'blackjack', 'baccarat', 'vegas', 'lottery', 'sweepstakes',
+    'crypto', 'bitcoin', 'investimento', 'renda extra', 'ganhe dinheiro',
+    'milagroso', 'segredo', 'fórmula', 'curso', 'download', 'gratis',
+    'sexo', 'porn', 'onlyfans', 'hot', 'universitario', 'trabalhe em casa'
+]
+
+# ============================================
+# SISTEMA DE PROXY INTELIGENTE
+# ============================================
+
+class ProxyManager:
+    """Gerencia rotacao de proxies para evitar bloqueios"""
+    
+    def __init__(self):
+        self.proxies = []
+        self.blacklist = set()
+        self.atualizar_lista()
+    
+    def atualizar_lista(self):
+        """Busca proxies publicos atualizados"""
+        try:
+            fontes_proxy = [
+                'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all',
+                'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
+                'https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt',
+            ]
+            
+            for url in fontes_proxy:
+                try:
+                    response = requests.get(url, timeout=5, headers=config.HEADERS)
+                    if response.status_code == 200:
+                        proxies = response.text.strip().split('\n')
+                        for proxy in proxies:
+                            proxy = proxy.strip()
+                            if proxy and ':' in proxy and proxy not in self.blacklist:
+                                self.proxies.append(proxy)
+                except:
+                    continue
+            
+            self.proxies = list(set(self.proxies))
+            logger.info(f"[OK] Proxys carregados: {len(self.proxies)}")
+            
+        except Exception as e:
+            logger.error(f"[Erro] ao carregar proxies: {e}")
+    
+    def obter_proxy(self):
+        """Retorna um proxy aleatorio da lista"""
+        if self.proxies:
+            proxy = random.choice(self.proxies)
+            return {'http': f'http://{proxy}', 'https': f'http://{proxy}'}
+        return None
+
+proxy_manager = ProxyManager()
+
+# ============================================
+# SISTEMA ANTI-SONO (MANTÉM O SITE ACORDADO 24/7)
+# ============================================
+
+class SistemaAntiSono:
+    """Sistema que faz ping no próprio site para não dormir"""
+    
+    def __init__(self):
+        self.ativo = True
+        self.url_do_site = "https://sharp-front-16-rj.onrender.com"
+        self.contador_pings = 0
+        
+    def iniciar(self):
+        """Inicia a thread de ping automático"""
+        thread = threading.Thread(target=self._loop_ping)
+        thread.daemon = True
+        thread.start()
+        logger.info("[Anti-Sono] Sistema ativado - Ping a cada 5 minutos")
+    
+    def _loop_ping(self):
+        """Loop que faz ping a cada 5 minutos"""
+        while self.ativo:
+            try:
+                # Faz uma requisição para o próprio site
+                response = requests.get(self.url_do_site, timeout=10)
+                self.contador_pings += 1
+                logger.info(f"[Anti-Sono] Ping #{self.contador_pings} - Status: {response.status_code}")
+                
+                # Também pinga a API de stats
+                requests.get(f"{self.url_do_site}/api/stats", timeout=5)
+                
+            except Exception as e:
+                logger.error(f"[Anti-Sono] Erro no ping: {e}")
+            
+            # Espera 5 minutos (300 segundos)
+            time.sleep(300)
+
+# ============================================
+# FONTES CONFIABEIS (NACIONAL E INTERNACIONAL)
+# ============================================
+
+FONTES_CONFIAVEIS = [
+    # BRASIL
+    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'The Intercept Brasil', 'pais': 'Brasil', 'url': 'https://theintercept.com/brasil/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    
+    # PORTUGAL
+    {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria': 'antifa', 'continente': 'Europa'},
+    
+    # AMERICA LATINA
+    {'nome': 'Pagina 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'La Jornada', 'pais': 'Mexico', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    
+    # USA / INTERNACIONAL
+    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    {'nome': 'CrimethInc', 'pais': 'Global', 'url': 'https://crimethinc.com/feeds/all.atom.xml', 'categoria': 'anarquista', 'continente': 'Global'},
+    {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria': 'antifa', 'continente': 'Global'},
+    {'nome': 'Democracy Now', 'pais': 'USA', 'url': 'https://www.democracynow.org/podcast.xml', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'comunista', 'continente': 'America do Norte'},
+    
+    # UK / EUROPA
+    {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
+    {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
+    
+    # ORIENTE MEDIO
+    {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
+    {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
+]
+
+# ============================================
+# SISTEMA DE RADAR AUTOMATICO
+# ============================================
+
+@dataclass
+class Noticia:
+    """Estrutura de dados para noticias"""
+    id: str
+    fonte: str
+    pais: str
+    continente: str
+    categoria: str
+    titulo: str          # Título em português
+    titulo_original: str  # Título original (inglês/espanhol/etc)
+    resumo: str           # Resumo em português
+    resumo_original: str  # Resumo original
+    link: str
+    data: str
+    publicada_em: str
+    destaque: bool = False
+
+class RadarAutomatico:
+    """Sistema de radar automatico"""
+    
+    def __init__(self):
+        self.fontes_ativas = []
+        self.estatisticas = {
+            'fontes_funcionando': 0,
+            'continentes': set(),
+            'paises': set(),
+            'categorias': defaultdict(int),
+        }
+        self.radar_ativo = False
+        
+    def iniciar_radar_automatico(self):
+        """Inicia o radar automatico"""
+        if self.radar_ativo:
+            return
+        
+        self.radar_ativo = True
+        thread = threading.Thread(target=self._loop_radar)
+        thread.daemon = True
+        thread.start()
+        logger.info("[Radar] Radar automatico iniciado")
+    
+    def _loop_radar(self):
+        """Loop principal do radar"""
+        time.sleep(config.DELAY_INICIAL)
+        
+        while self.radar_ativo:
+            try:
+                self._executar_varredura()
+                time.sleep(config.TEMPO_ATUALIZACAO * 60)
+            except Exception as e:
+                logger.error(f"[Erro] no radar: {e}")
+                time.sleep(60)
+    
+    def _executar_varredura(self):
+        """Executa uma varredura completa"""
+        logger.info(f"\n{'='*60}")
+        logger.info(f"[Radar] [{horario_brasilia()}] Iniciando varredura")
+        logger.info(f"{'='*60}")
+        
+        noticias_antigas = self._carregar_noticias()
+        links_antigos = {n.link for n in noticias_antigas}
+        todas_noticias_novas = []
+        
+        for fonte in FONTES_CONFIAVEIS:
+            time.sleep(config.DELAY_ENTRE_REQUISICOES)
+            
+            try:
+                response = requests.get(
+                    fonte['url'],
+                    headers=config.HEADERS,
+                    timeout=config.TIMEOUT_REQUISICAO
+                )
+                
+                if response.status_code == 200:
+                    feed = feedparser.parse(response.content)
+                    
+                    if len(feed.entries) > 0:
+                        noticias_fonte = []
+                        
+                        for entrada in feed.entries[:config.MAX_NOTICIAS_POR_FONTE]:
+                            if entrada.link in links_antigos:
+                                continue
+                            
+                            # FILTRO ANTI-CASINO
+                            titulo_lower = entrada.title.lower()
+                            palavra_proibida = False
+                            for palavra in PALAVRAS_PROIBIDAS:
+                                if palavra in titulo_lower:
+                                    palavra_proibida = True
+                                    break
+                            
+                            if palavra_proibida:
+                                continue
+                            
+                            noticia = self._criar_noticia(fonte, entrada)
+                            if noticia:
+                                noticias_fonte.append(noticia)
+                        
+                        if noticias_fonte:
+                            todas_noticias_novas.extend(noticias_fonte)
+                            self.fontes_ativas.append(fonte['nome'])
+                            self.estatisticas['fontes_funcionando'] += 1
+                            self.estatisticas['continentes'].add(fonte['continente'])
+                            self.estatisticas['paises'].add(fonte['pais'])
+                            self.estatisticas['categorias'][fonte['categoria']] += 1
+                            
+                            logger.info(f"  [OK] {fonte['nome']}: {len(noticias_fonte)} noticias")
+                            
+            except Exception as e:
+                logger.debug(f"  [Falha] {fonte['nome']}")
+        
+        if todas_noticias_novas:
+            todas_noticias = todas_noticias_novas + noticias_antigas
+            todas_noticias.sort(key=lambda x: x.data, reverse=True)
+            todas_noticias = todas_noticias[:config.MAX_NOTICIAS_TOTAL]
+            
+            for i, n in enumerate(todas_noticias[:5]):
+                n.destaque = True
+            
+            self._salvar_noticias(todas_noticias)
+            
+            logger.info(f"\n[OK] Varredura concluida")
+            logger.info(f"  Fontes ativas: {self.estatisticas['fontes_funcionando']}")
+            logger.info(f"  Noticias novas: {len(todas_noticias_novas)}")
+            logger.info(f"  Total: {len(todas_noticias)}")
+    
+    def _criar_noticia(self, fonte, entrada):
+        """Cria objeto de noticia com TRADUÇÃO para português"""
+        try:
+            # Título original e traduzido
+            titulo_original = entrada.title
+            titulo_traduzido = tradutor.traduzir(titulo_original)
+            
+            # Resumo original e traduzido
+            resumo_original = ""
+            if hasattr(entrada, 'summary'):
+                resumo_original = BeautifulSoup(entrada.summary, 'html.parser').get_text()
+            elif hasattr(entrada, 'description'):
+                resumo_original = BeautifulSoup(entrada.description, 'html.parser').get_text()
+            
+            resumo_traduzido = tradutor.traduzir(resumo_original) if resumo_original else ""
+            resumo_traduzido = resumo_traduzido[:200] + "..." if resumo_traduzido and len(resumo_traduzido) > 200 else resumo_traduzido or "Leia o artigo completo..."
+            
+            return Noticia(
+                id=hashlib.md5(entrada.link.encode()).hexdigest()[:8],
+                fonte=fonte['nome'],
+                pais=fonte['pais'],
+                continente=fonte['continente'],
+                categoria=fonte['categoria'],
+                titulo=titulo_traduzido,
+                titulo_original=titulo_original,
+                resumo=resumo_traduzido,
+                resumo_original=resumo_original[:200] + "..." if resumo_original and len(resumo_original) > 200 else resumo_original,
+                link=entrada.link,
+                data=entrada.get('published', datetime.now().strftime('%Y-%m-%d %H:%M')),
+                publicada_em=horario_brasilia()
+            )
+        except Exception as e:
+            logger.debug(f"Erro ao criar noticia: {e}")
+            return None
+    
+    def _carregar_noticias(self):
+        """Carrega noticias do arquivo"""
+        if os.path.exists(config.ARQUIVO_NOTICIAS):
+            try:
+                with open(config.ARQUIVO_NOTICIAS, 'r', encoding='utf-8') as f:
+                    dados = json.load(f)
+                    noticias_dict = dados.get('noticias', [])
+                    
+                    noticias = []
+                    for n in noticias_dict:
+                        try:
+                            noticias.append(Noticia(**n))
+                        except:
+                            pass
+                    return noticias
+            except:
+                return []
+        return []
+    
+    def _salvar_noticias(self, noticias):
+        """Salva noticias no arquivo"""
+        try:
+            noticias_dict = [asdict(n) for n in noticias]
+            
+            with open(config.ARQUIVO_NOTICIAS, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'noticias': noticias_dict,
+                    'ultima_atualizacao': horario_brasilia(),
+                    'total': len(noticias_dict)
+                }, f, ensure_ascii=False, indent=2, default=str)
+            
+            return True
+        except Exception as e:
+            logger.error(f"[Erro] ao salvar: {e}")
+            return False
+
+radar = RadarAutomatico()
+
+# ============================================
+# FUNCAO PARA BANDEIRA
+# ============================================
+
+def get_bandeira(pais):
+    """Retorna a bandeira do pais"""
+    bandeiras = {
+        'Brasil': '🇧🇷',
+        'Portugal': '🇵🇹',
+        'Argentina': '🇦🇷',
+        'Mexico': '🇲🇽',
+        'Venezuela': '🇻🇪',
+        'USA': '🇺🇸',
+        'UK': '🇬🇧',
+        'Qatar': '🇶🇦',
+        'Global': '🌍',
+        'Oriente Medio': '🕌',
+        'Europa': '🇪🇺',
+        'America do Sul': '🌎',
+        'America do Norte': '🌎',
+    }
+    return bandeiras.get(pais, '🏴')
+
+# ============================================
+# ROTA PARA SERVIR O QR CODE
+# ============================================
+
+@app.route('/qr-code.png')
+def serve_qr_code():
+    return send_from_directory('.', 'qr-code.png')
+
+# ============================================
+# ROTA DE PING (PARA O SISTEMA ANTI-SONO)
+# ============================================
+
+@app.route('/ping')
+def ping():
+    """Rota simples para manter o site acordado"""
+    return jsonify({
+        'status': 'ok',
+        'horario': horario_brasilia(),
+        'mensagem': 'Sistema anti-sono ativo'
+    })
 
 # ============================================
 # PAGINA PRINCIPAL - VERSÃO FINAL
@@ -27,7 +547,7 @@ def home():
     internacionais = [n for n in noticias if n.pais != 'Brasil']
     destaques = [n for n in noticias if n.destaque][:5]
     
-    # HTML dos destaques (igual)
+    # HTML dos destaques
     destaques_html = ''
     for n in destaques:
         bandeira = get_bandeira(n.pais)
@@ -98,7 +618,7 @@ def home():
         </div>
         '''
     
-    # HTML Nacionais - CORRIGIDO: apenas "BR NACIONAL" (sem bandeira)
+    # HTML Nacionais - "BR NACIONAL"
     nacional_html = ''
     for n in nacionais[:12]:
         bandeira = get_bandeira(n.pais)
@@ -836,7 +1356,7 @@ def home():
                 </div>
             </div>
             
-            <!-- COLUNA NACIONAL - CORRIGIDA: "BR NACIONAL" sem bandeira -->
+            <!-- COLUNA NACIONAL - "BR NACIONAL" -->
             <div class="coluna" id="coluna-nacional" data-categoria="nacional">
                 <h2>
                     🇧🇷 BR NACIONAL
@@ -882,7 +1402,7 @@ def home():
             </div>
         </div>
 
-        <!-- SCRIPT DE FILTROS (igual) -->
+        <!-- SCRIPT DE FILTROS -->
         <script>
         // Função principal de filtro
         function filtrarNoticias(filtro) {{
@@ -949,5 +1469,114 @@ def home():
     '''
 
 # ============================================
-# RESTO DO CÓDIGO PERMANECE IGUAL
+# ROTA DE ESTATÍSTICAS
+# ============================================
+
+@app.route('/stats')
+def stats_page():
+    noticias = radar._carregar_noticias()
+    
+    # Conta por fonte
+    fontes_count = {}
+    for n in noticias:
+        fontes_count[n.fonte] = fontes_count.get(n.fonte, 0) + 1
+    
+    # Ordena por quantidade
+    fontes_ordenadas = sorted(fontes_count.items(), key=lambda x: x[1], reverse=True)
+    
+    html_fontes = ''
+    for fonte, count in fontes_ordenadas[:20]:
+        html_fontes += f'<li>{fonte}: {count} notícias</li>'
+    
+    return f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>📊 Estatísticas - SHARP FRONT 16 RJ</title>
+        <style>
+            body {{ background: #0a0a0a; color: white; font-family: Arial; padding: 30px; }}
+            h1 {{ color: red; }}
+            .container {{ max-width: 800px; margin: 0 auto; }}
+            .stat-box {{ background: #111; border-left: 4px solid red; padding: 20px; margin: 20px 0; border-radius: 10px; }}
+            ul {{ list-style: none; padding: 0; }}
+            li {{ background: #1a1a1a; margin: 5px 0; padding: 8px 15px; border-radius: 5px; }}
+            a {{ color: red; text-decoration: none; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>📊 Estatísticas do Radar</h1>
+            <div class="stat-box">
+                <p><strong>Total de notícias:</strong> {len(noticias)}</p>
+                <p><strong>Fontes ativas:</strong> {radar.estatisticas['fontes_funcionando']}</p>
+                <p><strong>Continentes:</strong> {', '.join(radar.estatisticas['continentes'])}</p>
+                <p><strong>Horário:</strong> {horario_brasilia()}</p>
+            </div>
+            
+            <h2>Notícias por fonte:</h2>
+            <ul>
+                {html_fontes}
+            </ul>
+            
+            <p style="margin-top: 30px;"><a href="/">← Voltar</a></p>
+        </div>
+    </body>
+    </html>
+    '''
+
+# ============================================
+# API DE ESTATÍSTICAS
+# ============================================
+
+@app.route('/api/stats')
+def api_stats():
+    noticias = radar._carregar_noticias()
+    geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
+    antifa = [n for n in noticias if n.categoria in ['antifa', 'anarquista', 'comunista']]
+    nacionais = [n for n in noticias if n.pais == 'Brasil']
+    internacionais = [n for n in noticias if n.pais != 'Brasil']
+    
+    return jsonify({
+        'total': len(noticias),
+        'geopolitica': len(geopolitica),
+        'antifa': len(antifa),
+        'nacional': len(nacionais),
+        'internacional': len(internacionais),
+        'paises': len(radar.estatisticas['paises']),
+        'continentes': len(radar.estatisticas['continentes']),
+        'fontes_ativas': radar.estatisticas['fontes_funcionando'],
+        'ultima_atualizacao': horario_brasilia(),
+        'hora_brasilia': hora_brasilia(),
+    })
+
+# ============================================
+# INICIALIZAÇÃO
+# ============================================
+
+def inicializar():
+    """Inicializa o sistema"""
+    logger.info("="*70)
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v18.0")
+    logger.info("="*70)
+    
+    noticias = radar._carregar_noticias()
+    logger.info(f"Acervo inicial: {len(noticias)} noticias")
+    logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)}")
+    logger.info(f"Filtro anti-casino ativo: {len(PALAVRAS_PROIBIDAS)} palavras bloqueadas")
+    
+    radar.iniciar_radar_automatico()
+    logger.info("Radar automatico ativado - Busca global")
+    
+    # INICIA O SISTEMA ANTI-SONO
+    anti_sono = SistemaAntiSono()
+    anti_sono.iniciar()
+    logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
+    logger.info("✅ Tradutor ativo - Notícias em Português")
+    logger.info("="*70)
+
+inicializar()
+
+# ============================================
+# FIM - NÃO COLOQUE app.run() AQUI!
 # ============================================
