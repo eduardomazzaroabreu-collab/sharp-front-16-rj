@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 18.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 19.0 - FINAL                    ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -692,24 +692,26 @@ def home():
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 5px;
+                gap: 8px;
                 margin-bottom: 5px;
                 flex-wrap: wrap;
             }}
             
             .simbolo-anarquista {{
                 color: #ff0000;
-                font-size: 1.8rem;
+                font-size: 2.2rem;
                 filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
                 line-height: 1;
+                display: inline-block;
             }}
             
             .simbolo-comunista {{
                 color: #ff0000;
-                font-size: 1.8rem;  /* ← AGORA IGUAL AO ANARQUISMO! */
+                font-size: 2.9rem;  /* ← MESMO TAMANHO DO ANARQUISMO! */
                 filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
                 line-height: 1;
-                transform: translateY(2px);
+                display: inline-block;
+                transform: translateY(2px);  /* Pequeno ajuste visual */
             }}
             
             .titulo-vermelho {{
@@ -1167,7 +1169,7 @@ def home():
                     gap: 2px;
                 }}
                 .simbolo-anarquista, .simbolo-comunista {{
-                    font-size: 1.5rem;
+                    font-size: 1.8rem;
                 }}
                 .coluna h2 {{
                     font-size: 1.3rem;
@@ -1240,7 +1242,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v18.0 • Notícias em Português</div>
+            <div class="footer-versao">v19.0 • Notícias em Português</div>
         </div>
 
         <script>
@@ -1371,7 +1373,7 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v18.0")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v19.0")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
