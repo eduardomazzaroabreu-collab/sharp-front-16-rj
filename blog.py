@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 25.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 26.0 - FINAL                    ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -434,7 +434,7 @@ class RadarAutomatico:
                             assunto = ' '.join(palavras[:5])
                             resumo_original = f"Notícia: {assunto}... {titulo_original}. Clique para ler a matéria completa com análises e contexto."
                         else:
-                            resumo_original = f"Notícia: {titulo_original}. Clique para ler o artigo completo com detalhes e análisis."
+                            resumo_original = f"Notícia: {titulo_original}. Clique para ler o artigo completo com detalhes e análises."
                 else:
                     # Para outras fontes sem resumo
                     resumo_original = f"Leia o artigo completo sobre: {titulo_original[:100]}..."
@@ -763,8 +763,8 @@ def home():
                 justify-content: center;
                 gap: 5px;
                 margin-bottom: 5px;
-                flex-wrap: nowrap;      /* ← NÃO QUEBRA LINHA */
-                white-space: nowrap;     /* ← FORÇA UMA LINHA SÓ */
+                flex-wrap: nowrap;
+                white-space: nowrap;
             }}
             
             .simbolo-anarquista {{
@@ -773,19 +773,19 @@ def home():
                 filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
                 line-height: 1;
                 display: inline-block;
-                flex-shrink: 0;          /* ← NÃO ENCOLHE */
+                flex-shrink: 0;
             }}
             
-            .simbolo-comunista {
-    color: #ff0000;
-    font-size: 2.8rem;
-    filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
-    line-height: 1;
-    display: inline-block;
-    transform: translateY(2px);
-    flex-shrink: 0;          /* ← NÃO ENCOLHE */
-    margin-left: -5px;        /* ← ADICIONE ESTA LINHA */
-}}
+            .simbolo-comunista {{
+                color: #ff0000;
+                font-size: 2.8rem;
+                filter: drop-shadow(0 0 5px rgba(255,0,0,0.5));
+                line-height: 1;
+                display: inline-block;
+                transform: translateY(2px);
+                flex-shrink: 0;
+                margin-left: -5px;  /* ← MOVE O SÍMBOLO PARA ESQUERDA */
+            }}
             
             .titulo-vermelho {{
                 color: #ff0000;
@@ -793,7 +793,7 @@ def home():
                 font-weight: 900;
                 letter-spacing: 2px;
                 text-shadow: 2px 2px 0px #000;
-                white-space: nowrap;     /* ← TÍTULO NÃO QUEBRA */
+                white-space: nowrap;
             }}
             
             .separador {{
@@ -1203,11 +1203,11 @@ def home():
                 margin-top: 10px;
             }}
             
-            /* RESPONSIVIDADE MELHORADA PARA CELULAR */
+            /* RESPONSIVIDADE */
             @media (max-width: 600px) {{
                 .titulo-container {{
                     gap: 3px;
-                    transform: scale(0.9);  /* Reduz um pouco o tamanho geral */
+                    transform: scale(0.9);
                 }}
                 
                 .simbolo-anarquista {{
@@ -1215,7 +1215,8 @@ def home():
                 }}
                 
                 .simbolo-comunista {{
-                    font-size: 2.0rem;   /* Mantém maior que o anarquista */
+                    font-size: 2.0rem;
+                    margin-left: -5px;
                 }}
                 
                 .titulo-vermelho {{
@@ -1233,16 +1234,6 @@ def home():
                 .qr-code-container img {{
                     width: 60px;
                     height: 60px;
-                }}
-                
-                .qr-code-container p {{
-                    font-size: 0.6rem;
-                }}
-            }}
-            
-            @media (max-width: 400px) {{
-                .titulo-container {{
-                    transform: scale(0.8);  /* Reduz mais em telas muito pequenas */
                 }}
             }}
             
@@ -1337,7 +1328,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v25.0 • Notícias em Português</div>
+            <div class="footer-versao">v26.0 • Notícias em Português</div>
         </div>
 
         <script>
@@ -1468,7 +1459,7 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v25.0")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v26.0")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
@@ -1485,6 +1476,7 @@ def inicializar():
     logger.info("✅ Tradutor ativo - Notícias em Português")
     logger.info("✅ Resumos inteligentes - Democracy Now com descrições detalhadas")
     logger.info("✅ Layout responsivo - Título não quebra no celular")
+    logger.info("✅ Símbolo do comunismo movido para esquerda (margin-left: -8px)")
     logger.info("="*70)
 
 inicializar()
