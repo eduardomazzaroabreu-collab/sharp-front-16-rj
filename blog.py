@@ -943,24 +943,20 @@ def home():
                 position: absolute;
                 top: 20px;
                 right: 20px;
-                background: rgba(255,0,0,0.2);
+                background: rgba(0,0,0,0.5);
                 backdrop-filter: blur(5px);
-                padding: 10px 20px;
-                border-radius: 40px;
+                padding: 5px 12px;
+                border-radius: 20px;
                 border: 1px solid #ff0000;
                 z-index: 20;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-size: 1.1rem;
-                box-shadow: 0 5px 15px rgba(255,0,0,0.3);
+                font-size: 0.85rem;
+                color: #ccc;
             }}
             
             .numero-contador {{
                 color: #ff0000;
                 font-weight: bold;
-                font-size: 1.3rem;
-                text-shadow: 0 0 10px rgba(255,0,0,0.5);
+                margin-left: 3px;
             }}
             
             .titulo-container {{
@@ -1445,12 +1441,8 @@ def home():
                 .contador-header {{
                     top: 10px;
                     right: 10px;
-                    padding: 5px 10px;
-                    font-size: 0.9rem;
-                }}
-                
-                .numero-contador {{
-                    font-size: 1rem;
+                    padding: 3px 8px;
+                    font-size: 0.7rem;
                 }}
             }}
             
@@ -1469,7 +1461,7 @@ def home():
                     top: 0;
                     right: 0;
                     margin: 10px auto;
-                    display: inline-flex;
+                    display: inline-block;
                 }}
                 .horario-header {{
                     position: relative;
@@ -1498,9 +1490,7 @@ def home():
             </div>
             
             <div class="contador-header">
-                <span>👥 VISITAS:</span>
-                <span class="numero-contador" id="contador-visitas">{total_visitas}</span>
-                <span>🚀 ∞</span>
+                Visitas <span class="numero-contador" id="contador-visitas">{total_visitas}</span>
             </div>
             
             <div class="horario-header">🇧🇷 {horario_brasilia()}</div>
@@ -1555,7 +1545,7 @@ def home():
             <div class="footer-stats">
                 <span>🇧🇷 Horário Brasília</span>
                 <span>📰 {len(noticias)} notícias</span>
-                <span>👥 {total_visitas} visitas</span>
+                <span>Visitas {total_visitas}</span>
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
@@ -1715,7 +1705,7 @@ def inicializar():
     anti_sono.iniciar()
     logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
     logger.info("✅ Tradutor ativo - Notícias em Português")
-    logger.info("✅ Contador de visitas infinito - Começa em 100")
+    logger.info("✅ Contador de visitas discreto - 'Visitas 100'")
     logger.info("✅ 44 fontes de notícias + Glint Trade anonimizado")
     logger.info("✅ Democracy Now removido conforme solicitado")
     logger.info("="*70)
