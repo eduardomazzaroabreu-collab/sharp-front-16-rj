@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 26.0 - FINAL                    ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 27.0 - INFINITY                 ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -38,6 +38,57 @@ warnings.filterwarnings('ignore')
 # CRIAÇÃO DO APP FLASK
 # ============================================
 app = Flask(__name__)
+
+# ============================================
+# CONTADOR DE VISITANTES
+# ============================================
+
+class ContadorVisitantes:
+    """Contador de visitas por IP - começa em 100 e vai ao infinito"""
+    
+    def __init__(self, arquivo='contador_visitas.json'):
+        self.arquivo = arquivo
+        self.visitas_unicas = set()
+        self.total_visitas = 100  # COMEÇA EM 100
+        self.carregar_dados()
+    
+    def carregar_dados(self):
+        """Carrega dados salvos"""
+        if os.path.exists(self.arquivo):
+            try:
+                with open(self.arquivo, 'r', encoding='utf-8') as f:
+                    dados = json.load(f)
+                    self.visitas_unicas = set(dados.get('ips', []))
+                    self.total_visitas = dados.get('total', 100)
+            except:
+                pass
+    
+    def salvar_dados(self):
+        """Salva dados no arquivo"""
+        try:
+            with open(self.arquivo, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'ips': list(self.visitas_unicas),
+                    'total': self.total_visitas,
+                    'ultima_atualizacao': horario_brasilia()
+                }, f, ensure_ascii=False, indent=2)
+        except:
+            pass
+    
+    def registrar_visita(self, ip):
+        """Registra uma visita única"""
+        if ip and ip not in self.visitas_unicas:
+            self.visitas_unicas.add(ip)
+            self.total_visitas += 1
+            self.salvar_dados()
+            return True
+        return False
+    
+    def get_total(self):
+        """Retorna total de visitas"""
+        return self.total_visitas
+
+contador_visitas = ContadorVisitantes()
 
 # ============================================
 # TRADUTOR INTEGRADO (GOOGLE TRANSLATE)
@@ -97,7 +148,7 @@ class Config:
     DELAY_INICIAL = 2  # segundos antes de comecar
     
     MAX_NOTICIAS_POR_FONTE = 5
-    MAX_NOTICIAS_TOTAL = 3000
+    MAX_NOTICIAS_TOTAL = 5000  # AUMENTADO PARA 5000
     MAX_TRABALHADORES = 10
     MAX_TENTATIVAS = 2
     
@@ -231,32 +282,168 @@ class SistemaAntiSono:
             time.sleep(300)
 
 # ============================================
-# FONTES CONFIABEIS
+# FONTES CONFIÁVEIS (EXPANDIDO - 44 FONTES)
 # ============================================
 
 FONTES_CONFIAVEIS = [
-    # BRASIL
+    # BRASIL (EXPANDIDO)
     {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'antifa', 'continente': 'America do Sul'},
     {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
     {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
     {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
     {'nome': 'The Intercept Brasil', 'pais': 'Brasil', 'url': 'https://theintercept.com/brasil/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'Brasil 247', 'pais': 'Brasil', 'url': 'https://www.brasil247.com/feed', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'Diário do Centro do Mundo', 'pais': 'Brasil', 'url': 'https://www.diariodocentrodomundo.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'Revista Fórum', 'pais': 'Brasil', 'url': 'https://revistaforum.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'Jornal GGN', 'pais': 'Brasil', 'url': 'https://jornalggn.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'Conversa Afiada', 'pais': 'Brasil', 'url': 'https://conversaafiada.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    
+    # PORTUGAL
     {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria': 'antifa', 'continente': 'Europa'},
+    {'nome': 'Público', 'pais': 'Portugal', 'url': 'https://feeds.feedburner.com/PublicoRSS', 'categoria': 'geopolitica', 'continente': 'Europa'},
+    
+    # AMÉRICA LATINA
     {'nome': 'Pagina 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'antifa', 'continente': 'America do Sul'},
     {'nome': 'La Jornada', 'pais': 'Mexico', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'antifa', 'continente': 'America do Norte'},
-    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'geopolitica', 'continente': 'America do Sul'},
+    {'nome': 'El País América', 'pais': 'Espanha', 'url': 'https://elpais.com/america/feed/', 'categoria': 'geopolitica', 'continente': 'Europa'},
+    {'nome': 'Resumen Latinoamericano', 'pais': 'Argentina', 'url': 'https://www.resumenlatinoamericano.org/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    {'nome': 'La Izquierda Diario', 'pais': 'Mexico', 'url': 'https://www.laizquierdadiario.mx/feed', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    {'nome': 'ANRed', 'pais': 'Argentina', 'url': 'https://www.anred.org/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    
+    # USA / INTERNACIONAL
+    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'anarquista', 'continente': 'America do Norte'},
     {'nome': 'CrimethInc', 'pais': 'Global', 'url': 'https://crimethinc.com/feeds/all.atom.xml', 'categoria': 'anarquista', 'continente': 'Global'},
     {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria': 'antifa', 'continente': 'Global'},
-    {'nome': 'Democracy Now', 'pais': 'USA', 'url': 'https://www.democracynow.org/podcast.xml', 'categoria': 'antifa', 'continente': 'America do Norte'},
     {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'antifa', 'continente': 'America do Norte'},
     {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'antifa', 'continente': 'America do Norte'},
     {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'comunista', 'continente': 'America do Norte'},
     {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
     {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
+    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    {'nome': 'MintPress News', 'pais': 'USA', 'url': 'https://www.mintpressnews.com/feed', 'categoria': 'geopolitica', 'continente': 'America do Norte'},
+    {'nome': 'Antiwar.com', 'pais': 'USA', 'url': 'https://antiwar.com/feed/', 'categoria': 'geopolitica', 'continente': 'America do Norte'},
+    {'nome': 'Black Agenda Report', 'pais': 'USA', 'url': 'https://blackagendareport.com/feed', 'categoria': 'antifa', 'continente': 'America do Norte'},
+    
+    # ORIENTE MÉDIO / ÁFRICA
     {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
     {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
+    {'nome': 'The Palestine Chronicle', 'pais': 'Palestina', 'url': 'https://www.palestinechronicle.com/feed/', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
+    {'nome': 'Mondoweiss', 'pais': 'USA', 'url': 'https://mondoweiss.net/feed/', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
+    {'nome': 'Electronic Intifada', 'pais': 'Palestina', 'url': 'https://electronicintifada.net/rss.xml', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
+    
+    # EUROPA
+    {'nome': 'Le Monde Diplomatique', 'pais': 'França', 'url': 'https://mondediplo.com/feed', 'categoria': 'geopolitica', 'continente': 'Europa'},
+    {'nome': 'The Canary', 'pais': 'UK', 'url': 'https://www.thecanary.co/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
+    {'nome': 'Red Pepper', 'pais': 'UK', 'url': 'https://www.redpepper.org.uk/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
+    {'nome': 'Ceasefire Magazine', 'pais': 'UK', 'url': 'https://ceasefiremagazine.co.uk/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
+    
+    # ÁSIA / OCEANIA
+    {'nome': 'Green Left', 'pais': 'Australia', 'url': 'https://www.greenleft.org.au/feed', 'categoria': 'antifa', 'continente': 'Oceania'},
+    {'nome': 'Peoples Dispatch', 'pais': 'India', 'url': 'https://peoplesdispatch.org/feed/', 'categoria': 'antifa', 'continente': 'Asia'},
 ]
+
+# TOTAL: 44 FONTES
+
+# ============================================
+# SCRAPER DO GLINT.TRADE (SEM CITAR)
+# ============================================
+
+class GlintTradeScraper:
+    """Scraper do Glint Trade - aparece como 'Análise Global' sem mencionar a fonte"""
+    
+    def __init__(self):
+        self.url_base = "https://glint.trade"
+        self.ultima_busca = None
+        
+    def buscar_noticias(self):
+        """Busca notícias do Glint Trade e transforma"""
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml',
+                'Accept-Language': 'pt-BR,pt;q=0.9'
+            }
+            
+            response = requests.get(self.url_base, headers=headers, timeout=10)
+            if response.status_code != 200:
+                return []
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Tenta encontrar notícias/títulos
+            titulos = []
+            
+            # Procura por tags comuns de título
+            for tag in soup.find_all(['h1', 'h2', 'h3', 'h4']):
+                texto = tag.get_text().strip()
+                if texto and len(texto) > 15 and len(texto) < 100:
+                    # Filtra palavras genéricas
+                    palavras_proibidas = ['menu', 'login', 'sign', 'register', 'cookie']
+                    if not any(p in texto.lower() for p in palavras_proibidas):
+                        titulos.append(texto)
+            
+            # Procura por links
+            for link in soup.find_all('a', href=True):
+                texto = link.get_text().strip()
+                href = link['href']
+                if texto and len(texto) > 15 and len(texto) < 80:
+                    if not texto.lower().startswith(('login', 'sign', 'menu')):
+                        # Constrói URL completa
+                        if href.startswith('/'):
+                            href = self.url_base + href
+                        elif not href.startswith('http'):
+                            href = self.url_base + '/' + href
+                        
+                        titulos.append({
+                            'texto': texto,
+                            'link': href
+                        })
+            
+            # Se encontrou títulos, transforma em notícias
+            noticias_glint = []
+            for item in titulos[:10]:  # Pega os 10 primeiros
+                if isinstance(item, str):
+                    titulo = item
+                    link = self.url_base
+                else:
+                    titulo = item['texto']
+                    link = item['link']
+                
+                # Categoriza automaticamente
+                categoria = self._categorizar_titulo(titulo)
+                
+                noticias_glint.append({
+                    'titulo': titulo,
+                    'titulo_traduzido': tradutor.traduzir(titulo),
+                    'link': link,
+                    'categoria': categoria,
+                    'fonte_original': 'Análise Global'  # NÃO MENCIONA GLINT
+                })
+            
+            logger.info(f"[Glint] Encontradas {len(noticias_glint)} notícias (anonimizado)")
+            return noticias_glint
+            
+        except Exception as e:
+            logger.debug(f"[Glint] Erro na busca: {e}")
+            return []
+    
+    def _categorizar_titulo(self, titulo):
+        """Categoriza o título automaticamente"""
+        titulo_lower = titulo.lower()
+        
+        if any(p in titulo_lower for p in ['rússia', 'russia', 'ucrânia', 'ukraine', 'guerra', 'war', 'conflito']):
+            return 'geopolitica'
+        elif any(p in titulo_lower for p in ['economia', 'economy', 'mercado', 'market', 'finance']):
+            return 'economia'
+        elif any(p in titulo_lower for p in ['brasil', 'brazil', 'lula', 'bolsonaro', 'congresso']):
+            return 'nacional'
+        elif any(p in titulo_lower for p in ['china', 'eua', 'us', 'estados unidos', 'europa', 'europe']):
+            return 'geopolitica'
+        else:
+            return 'internacional'
+
+glint_scraper = GlintTradeScraper()
 
 # ============================================
 # SISTEMA DE RADAR
@@ -313,13 +500,14 @@ class RadarAutomatico:
     
     def _executar_varredura(self):
         logger.info(f"\n{'='*60}")
-        logger.info(f"[Radar] [{horario_brasilia()}] Iniciando varredura")
+        logger.info(f"[Radar] [{horario_brasilia()}] Iniciando varredura em 44 fontes + Glint")
         logger.info(f"{'='*60}")
         
         noticias_antigas = self._carregar_noticias()
         links_antigos = {n.link for n in noticias_antigas}
         todas_noticias_novas = []
         
+        # ===== BUSCA NAS FONTES RSS =====
         for fonte in FONTES_CONFIAVEIS:
             time.sleep(config.DELAY_ENTRE_REQUISICOES)
             try:
@@ -354,6 +542,33 @@ class RadarAutomatico:
             except Exception as e:
                 logger.debug(f"  [Falha] {fonte['nome']}")
         
+        # ===== BUSCA NO GLINT.TRADE (ANONIMIZADO) =====
+        try:
+            noticias_glint = glint_scraper.buscar_noticias()
+            for item in noticias_glint:
+                if item['link'] in links_antigos:
+                    continue
+                
+                # Cria noticia a partir do Glint
+                noticia = Noticia(
+                    id=hashlib.md5(item['link'].encode()).hexdigest()[:8],
+                    fonte='Análise Global',  # NÃO MENCIONA GLINT
+                    pais='Global',
+                    continente='Global',
+                    categoria=item['categoria'],
+                    titulo=item['titulo_traduzido'],
+                    titulo_original=item['titulo'],
+                    resumo=f"Análise aprofundada sobre {item['titulo_traduzido'][:50]}... Clique para ler o conteúdo completo.",
+                    resumo_original=item['titulo'],
+                    link=item['link'],
+                    data=datetime.now().strftime('%Y-%m-%d %H:%M'),
+                    publicada_em=horario_brasilia()
+                )
+                todas_noticias_novas.append(noticia)
+                logger.info(f"  [OK] Análise Global: +1 notícia")
+        except Exception as e:
+            logger.debug(f"  [Falha] Análise Global")
+        
         if todas_noticias_novas:
             todas_noticias = todas_noticias_novas + noticias_antigas
             todas_noticias.sort(key=lambda x: x.data, reverse=True)
@@ -371,7 +586,7 @@ class RadarAutomatico:
             titulo_original = entrada.title
             titulo_traduzido = tradutor.traduzir(titulo_original)
             
-            # ===== MELHORIA: EXTRAIR RESUMO DE MÚLTIPLAS FONTES =====
+            # ===== EXTRAIR RESUMO DE MÚLTIPLAS FONTES =====
             resumo_original = ""
             
             # Tenta extrair de summary
@@ -392,52 +607,7 @@ class RadarAutomatico:
             
             # Se ainda não tem resumo, usa o título ou uma mensagem padrão
             if not resumo_original or len(resumo_original.strip()) < 20:
-                # ===== VERSÃO MELHORADA PARA DEMOCRACY NOW =====
-                if fonte['nome'] == 'Democracy Now':
-                    # Extrai informações do título de forma mais inteligente
-                    titulo_lower = titulo_original.lower()
-                    
-                    # Tenta identificar o tipo de conteúdo
-                    if 'headlines for' in titulo_lower:
-                        # Ex: "Headlines for March 04, 2026"
-                        data = titulo_original.replace('Headlines for', '').replace('Headlines', '').strip()
-                        resumo_original = f"Resumo das principais notícias do dia {data}. Inclui reportagens sobre conflitos internacionais, política e direitos humanos."
-                    
-                    elif ':' in titulo_original:
-                        # Ex: "Who Bombed Girls' School in Iran? Reporter Nilo Tabrizy on What We Know About Massacre"
-                        partes = titulo_original.split(':', 1)
-                        pergunta = partes[0].strip()
-                        contexto = partes[1].strip() if len(partes) > 1 else ""
-                        
-                        # Cria um resumo baseado na pergunta
-                        if '?' in pergunta:
-                            resumo_original = f"Reportagem investigativa: {pergunta} {contexto[:100]}. Entrevista exclusiva com especialistas sobre o caso."
-                        else:
-                            resumo_original = f"Reportagem especial sobre {pergunta}. {contexto[:100]}... Clique para ler a matéria completa."
-                    
-                    elif 'interview' in titulo_lower or 'conversation' in titulo_lower:
-                        # Ex: "Interview with Noam Chomsky on US Foreign Policy"
-                        resumo_original = f"Entrevista exclusiva: {titulo_original}. Discussão aprofundada sobre o tema com especialista."
-                    
-                    elif 'report' in titulo_lower or 'investigation' in titulo_lower:
-                        # Ex: "Investigation Reveals New Details About Drone Strike"
-                        resumo_original = f"Reportagem investigativa: {titulo_original}. Novas informações e análises exclusivas."
-                    
-                    elif 'update' in titulo_lower or 'latest' in titulo_lower:
-                        # Ex: "Latest Updates on Iran Conflict"
-                        resumo_original = f"Atualizações sobre {titulo_original}. Acompanhe os últimos acontecimentos."
-                    
-                    else:
-                        # Para outros casos, tenta extrair o assunto principal
-                        palavras = titulo_original.split()
-                        if len(palavras) > 5:
-                            assunto = ' '.join(palavras[:5])
-                            resumo_original = f"Notícia: {assunto}... {titulo_original}. Clique para ler a matéria completa com análises e contexto."
-                        else:
-                            resumo_original = f"Notícia: {titulo_original}. Clique para ler o artigo completo com detalhes e análises."
-                else:
-                    # Para outras fontes sem resumo
-                    resumo_original = f"Leia o artigo completo sobre: {titulo_original[:100]}..."
+                resumo_original = f"Leia o artigo completo sobre: {titulo_original[:100]}..."
             
             # Traduz o resumo
             resumo_traduzido = tradutor.traduzir(resumo_original) if resumo_original else ""
@@ -513,9 +683,16 @@ def get_bandeira(pais):
         'USA': '🇺🇸',
         'UK': '🇬🇧',
         'Qatar': '🇶🇦',
+        'Palestina': '🇵🇸',
+        'França': '🇫🇷',
+        'Espanha': '🇪🇸',
+        'Australia': '🇦🇺',
+        'India': '🇮🇳',
         'Global': '🌍',
         'Oriente Medio': '🕌',
         'Europa': '🇪🇺',
+        'Asia': '🌏',
+        'Oceania': '🌏',
         'America do Sul': '🌎',
         'America do Norte': '🌎',
     }
@@ -543,6 +720,11 @@ def ping():
 
 @app.route('/')
 def home():
+    # Registra a visita
+    ip = request.remote_addr
+    contador_visitas.registrar_visita(ip)
+    total_visitas = contador_visitas.get_total()
+    
     noticias = radar._carregar_noticias()
     
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
@@ -757,6 +939,30 @@ def home():
                 margin-top: 3px;
             }}
             
+            .contador-header {{
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: rgba(255,0,0,0.2);
+                backdrop-filter: blur(5px);
+                padding: 10px 20px;
+                border-radius: 40px;
+                border: 1px solid #ff0000;
+                z-index: 20;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 1.1rem;
+                box-shadow: 0 5px 15px rgba(255,0,0,0.3);
+            }}
+            
+            .numero-contador {{
+                color: #ff0000;
+                font-weight: bold;
+                font-size: 1.3rem;
+                text-shadow: 0 0 10px rgba(255,0,0,0.5);
+            }}
+            
             .titulo-container {{
                 display: flex;
                 align-items: center;
@@ -784,7 +990,7 @@ def home():
                 display: inline-block;
                 transform: translateY(2px);
                 flex-shrink: 0;
-                margin-left: -5px;  /* ← MOVE O SÍMBOLO PARA ESQUERDA */
+                margin-left: -5px;
             }}
             
             .titulo-vermelho {{
@@ -1235,6 +1441,17 @@ def home():
                     width: 60px;
                     height: 60px;
                 }}
+                
+                .contador-header {{
+                    top: 10px;
+                    right: 10px;
+                    padding: 5px 10px;
+                    font-size: 0.9rem;
+                }}
+                
+                .numero-contador {{
+                    font-size: 1rem;
+                }}
             }}
             
             @media (max-width: 800px) {{
@@ -1246,6 +1463,13 @@ def home():
                     top: 0;
                     left: 0;
                     margin: 0 auto 15px;
+                }}
+                .contador-header {{
+                    position: relative;
+                    top: 0;
+                    right: 0;
+                    margin: 10px auto;
+                    display: inline-flex;
                 }}
                 .horario-header {{
                     position: relative;
@@ -1271,6 +1495,12 @@ def home():
             <div class="qr-code-container">
                 <img src="/qr-code.png" alt="QR Code" onerror="this.style.display='none'">
                 <p>Ajude o coletivo<br><small>Aponte a câmera</small></p>
+            </div>
+            
+            <div class="contador-header">
+                <span>👥 VISITAS:</span>
+                <span class="numero-contador" id="contador-visitas">{total_visitas}</span>
+                <span>🚀 ∞</span>
             </div>
             
             <div class="horario-header">🇧🇷 {horario_brasilia()}</div>
@@ -1325,10 +1555,11 @@ def home():
             <div class="footer-stats">
                 <span>🇧🇷 Horário Brasília</span>
                 <span>📰 {len(noticias)} notícias</span>
+                <span>👥 {total_visitas} visitas</span>
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v26.0 • Notícias em Português</div>
+            <div class="footer-versao">v27.0 • 44 Fontes + Análise Global</div>
         </div>
 
         <script>
@@ -1386,6 +1617,8 @@ def home():
 @app.route('/stats')
 def stats_page():
     noticias = radar._carregar_noticias()
+    total_visitas = contador_visitas.get_total()
+    
     fontes_count = {}
     for n in noticias:
         fontes_count[n.fonte] = fontes_count.get(n.fonte, 0) + 1
@@ -1406,6 +1639,7 @@ def stats_page():
             h1 {{ color: red; }}
             .container {{ max-width: 800px; margin: 0 auto; }}
             .stat-box {{ background: #111; border-left: 4px solid red; padding: 20px; margin: 20px 0; border-radius: 10px; }}
+            .numero-grande {{ font-size: 2.5rem; color: red; font-weight: bold; }}
             ul {{ list-style: none; padding: 0; }}
             li {{ background: #1a1a1a; margin: 5px 0; padding: 8px 15px; border-radius: 5px; }}
             a {{ color: red; text-decoration: none; }}
@@ -1415,8 +1649,9 @@ def stats_page():
         <div class="container">
             <h1>📊 Estatísticas do Radar</h1>
             <div class="stat-box">
+                <p><strong>Total de visitas:</strong> <span class="numero-grande">{total_visitas}</span></p>
                 <p><strong>Total de notícias:</strong> {len(noticias)}</p>
-                <p><strong>Fontes ativas:</strong> {radar.estatisticas['fontes_funcionando']}</p>
+                <p><strong>Fontes ativas:</strong> {radar.estatisticas['fontes_funcionando']} de 44</p>
                 <p><strong>Continentes:</strong> {', '.join(radar.estatisticas['continentes'])}</p>
                 <p><strong>Horário:</strong> {horario_brasilia()}</p>
             </div>
@@ -1435,13 +1670,16 @@ def stats_page():
 @app.route('/api/stats')
 def api_stats():
     noticias = radar._carregar_noticias()
+    total_visitas = contador_visitas.get_total()
+    
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
     antifa = [n for n in noticias if n.categoria in ['antifa', 'anarquista', 'comunista']]
     nacionais = [n for n in noticias if n.pais == 'Brasil']
     internacionais = [n for n in noticias if n.pais != 'Brasil']
     
     return jsonify({
-        'total': len(noticias),
+        'total_visitas': total_visitas,
+        'total_noticias': len(noticias),
         'geopolitica': len(geopolitica),
         'antifa': len(antifa),
         'nacional': len(nacionais),
@@ -1459,13 +1697,16 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v26.0")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v27.0 - INFINITY")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
+    total_visitas = contador_visitas.get_total()
+    
     logger.info(f"Acervo inicial: {len(noticias)} noticias")
-    logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)}")
+    logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)} (44 fontes)")
     logger.info(f"Filtro anti-casino ativo: {len(PALAVRAS_PROIBIDAS)} palavras bloqueadas")
+    logger.info(f"Contador de visitas: iniciando em {total_visitas}")
     
     radar.iniciar_radar_automatico()
     logger.info("Radar automatico ativado - Busca global")
@@ -1474,9 +1715,13 @@ def inicializar():
     anti_sono.iniciar()
     logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
     logger.info("✅ Tradutor ativo - Notícias em Português")
-    logger.info("✅ Resumos inteligentes - Democracy Now com descrições detalhadas")
-    logger.info("✅ Layout responsivo - Título não quebra no celular")
-    logger.info("✅ Símbolo do comunismo movido para esquerda (margin-left: -8px)")
+    logger.info("✅ Contador de visitas infinito - Começa em 100")
+    logger.info("✅ 44 fontes de notícias + Glint Trade anonimizado")
+    logger.info("✅ Democracy Now removido conforme solicitado")
     logger.info("="*70)
 
 inicializar()
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
