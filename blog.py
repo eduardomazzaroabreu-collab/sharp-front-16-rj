@@ -3,7 +3,7 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 27.0 - INFINITY                 ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 27.1 - INFINITY                 ║
 ║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
 ║              "A informacao e nossa arma mais poderosa"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
@@ -40,16 +40,16 @@ warnings.filterwarnings('ignore')
 app = Flask(__name__)
 
 # ============================================
-# CONTADOR DE VISITANTES
+# CONTADOR DE VISITANTES (CORRIGIDO PARA RENDER)
 # ============================================
 
 class ContadorVisitantes:
-    """Contador de visitas por IP - começa em 100 e vai ao infinito"""
+    """Contador de visitas por IP - começa em 176 e vai ao infinito"""
     
     def __init__(self, arquivo='contador_visitas.json'):
         self.arquivo = arquivo
         self.visitas_unicas = set()
-        self.total_visitas = 100  # COMEÇA EM 100
+        self.total_visitas = 176  # COMEÇA EM 176 (conforme solicitado)
         self.carregar_dados()
     
     def carregar_dados(self):
@@ -59,9 +59,10 @@ class ContadorVisitantes:
                 with open(self.arquivo, 'r', encoding='utf-8') as f:
                     dados = json.load(f)
                     self.visitas_unicas = set(dados.get('ips', []))
-                    self.total_visitas = dados.get('total', 100)
-            except:
-                pass
+                    self.total_visitas = dados.get('total', 176)
+                logger.info(f"[Contador] Carregado: {self.total_visitas} visitas, {len(self.visitas_unicas)} IPs únicos")
+            except Exception as e:
+                logger.error(f"[Contador] Erro ao carregar: {e}")
     
     def salvar_dados(self):
         """Salva dados no arquivo"""
@@ -72,15 +73,28 @@ class ContadorVisitantes:
                     'total': self.total_visitas,
                     'ultima_atualizacao': horario_brasilia()
                 }, f, ensure_ascii=False, indent=2)
-        except:
-            pass
+            logger.info(f"[Contador] Salvo: {self.total_visitas} visitas")
+        except Exception as e:
+            logger.error(f"[Contador] Erro ao salvar: {e}")
     
-    def registrar_visita(self, ip):
-        """Registra uma visita única"""
-        if ip and ip not in self.visitas_unicas:
+    def get_ip_real(self):
+        """Pega o IP real do visitante (funciona no Render)"""
+        # Tenta pegar do cabeçalho X-Forwarded-For (usado em proxies)
+        if request.headers.getlist("X-Forwarded-For"):
+            # Pega o primeiro IP da lista (é o IP real do cliente)
+            ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+            return ip
+        # Fallback para remote_addr
+        return request.remote_addr
+    
+    def registrar_visita(self):
+        """Registra uma visita única usando IP real"""
+        ip = self.get_ip_real()
+        if ip and ip not in self.visitas_unicas and ip != '127.0.0.1' and not ip.startswith('10.'):
             self.visitas_unicas.add(ip)
             self.total_visitas += 1
             self.salvar_dados()
+            logger.info(f"[Contador] Nova visita! Total: {self.total_visitas}")  # IP removido do log
             return True
         return False
     
@@ -148,7 +162,7 @@ class Config:
     DELAY_INICIAL = 2  # segundos antes de comecar
     
     MAX_NOTICIAS_POR_FONTE = 5
-    MAX_NOTICIAS_TOTAL = 5000  # AUMENTADO PARA 5000
+    MAX_NOTICIAS_TOTAL = 5000
     MAX_TRABALHADORES = 10
     MAX_TENTATIVAS = 2
     
@@ -720,9 +734,8 @@ def ping():
 
 @app.route('/')
 def home():
-    # Registra a visita
-    ip = request.remote_addr
-    contador_visitas.registrar_visita(ip)
+    # Registra a visita (agora funcionando no Render)
+    contador_visitas.registrar_visita()
     total_visitas = contador_visitas.get_total()
     
     noticias = radar._carregar_noticias()
@@ -1549,7 +1562,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
             <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v27.0 • 44 Fontes + Análise Global</div>
+            <div class="footer-versao">v27.1 • 44 Fontes + Análise Global</div>
         </div>
 
         <script>
@@ -1687,7 +1700,7 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v27.0 - INFINITY")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v27.1 - INFINITY")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
@@ -1705,9 +1718,10 @@ def inicializar():
     anti_sono.iniciar()
     logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
     logger.info("✅ Tradutor ativo - Notícias em Português")
-    logger.info("✅ Contador de visitas discreto - 'Visitas 100'")
+    logger.info("✅ Contador de visitas discreto - 'Visitas X'")
     logger.info("✅ 44 fontes de notícias + Glint Trade anonimizado")
     logger.info("✅ Democracy Now removido conforme solicitado")
+    logger.info("✅ CORRIGIDO: IP real capturado no Render (não exibido)")
     logger.info("="*70)
 
 inicializar()
