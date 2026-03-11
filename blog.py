@@ -3,9 +3,9 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 27.1 - INFINITY                 ║
-║         RADAR AUTOMATICO COM FILTROS POR CATEGORIA - NOTÍCIAS EM PT          ║
-║              "A informacao e nossa arma mais poderosa"                       ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.0 - INFINITY                 ║
+║         RADAR AUTOMATICO COM 120+ FONTES - NOTÍCIAS EM PT                    ║
+║         "Informação com propósito - Sempre atualizado"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -40,7 +40,7 @@ warnings.filterwarnings('ignore')
 app = Flask(__name__)
 
 # ============================================
-# CONTADOR DE VISITANTES (CORRIGIDO PARA RENDER)
+# CONTADOR DE VISITANTES
 # ============================================
 
 class ContadorVisitantes:
@@ -49,7 +49,7 @@ class ContadorVisitantes:
     def __init__(self, arquivo='contador_visitas.json'):
         self.arquivo = arquivo
         self.visitas_unicas = set()
-        self.total_visitas = 176  # COMEÇA EM 176 (conforme solicitado)
+        self.total_visitas = 176
         self.carregar_dados()
     
     def carregar_dados(self):
@@ -60,7 +60,7 @@ class ContadorVisitantes:
                     dados = json.load(f)
                     self.visitas_unicas = set(dados.get('ips', []))
                     self.total_visitas = dados.get('total', 176)
-                logger.info(f"[Contador] Carregado: {self.total_visitas} visitas, {len(self.visitas_unicas)} IPs únicos")
+                logger.info(f"[Contador] Carregado: {self.total_visitas} visitas")
             except Exception as e:
                 logger.error(f"[Contador] Erro ao carregar: {e}")
     
@@ -73,18 +73,14 @@ class ContadorVisitantes:
                     'total': self.total_visitas,
                     'ultima_atualizacao': horario_brasilia()
                 }, f, ensure_ascii=False, indent=2)
-            logger.info(f"[Contador] Salvo: {self.total_visitas} visitas")
         except Exception as e:
             logger.error(f"[Contador] Erro ao salvar: {e}")
     
     def get_ip_real(self):
         """Pega o IP real do visitante (funciona no Render)"""
-        # Tenta pegar do cabeçalho X-Forwarded-For (usado em proxies)
         if request.headers.getlist("X-Forwarded-For"):
-            # Pega o primeiro IP da lista (é o IP real do cliente)
             ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
             return ip
-        # Fallback para remote_addr
         return request.remote_addr
     
     def registrar_visita(self):
@@ -94,31 +90,28 @@ class ContadorVisitantes:
             self.visitas_unicas.add(ip)
             self.total_visitas += 1
             self.salvar_dados()
-            logger.info(f"[Contador] Nova visita! Total: {self.total_visitas}")  # IP removido do log
+            logger.info(f"[Contador] Nova visita! Total: {self.total_visitas}")
             return True
         return False
     
     def get_total(self):
-        """Retorna total de visitas"""
         return self.total_visitas
 
 contador_visitas = ContadorVisitantes()
 
 # ============================================
-# TRADUTOR INTEGRADO (GOOGLE TRANSLATE)
+# TRADUTOR INTEGRADO
 # ============================================
 
 class TradutorIntegrado:
-    """Tradutor usando Google Translate (gratuito)"""
+    """Tradutor usando Google Translate"""
     
     @staticmethod
     def traduzir(texto, idioma_destino='pt'):
-        """Traduz texto para português usando Google Translate"""
         if not texto or len(texto) < 10:
             return texto
         
         try:
-            # URL do Google Translate (versão simples)
             url = "https://translate.googleapis.com/translate_a/single"
             params = {
                 'client': 'gtx',
@@ -141,12 +134,10 @@ class TradutorIntegrado:
 tradutor = TradutorIntegrado()
 
 # ============================================
-# CONFIGURACOES
+# CONFIGURACOES AVANÇADAS
 # ============================================
 
 class Config:
-    """Configuracoes avancadas do sistema"""
-    
     NOME_SITE = "SHARP - FRONT 16 RJ"
     LEMA = "A informacao e nossa arma mais poderosa"
     
@@ -156,46 +147,49 @@ class Config:
     ARQUIVO_LOG = 'radar_antifa.log'
     
     TEMPO_ATUALIZACAO = 10  # minutos
-    TIMEOUT_REQUISICAO = 8  # segundos
-    TIMEOUT_TOTAL = 30  # segundos
-    DELAY_ENTRE_REQUISICOES = 5  # 5 segundos entre cada site
-    DELAY_INICIAL = 2  # segundos antes de comecar
+    TIMEOUT_REQUISICAO = 8
+    TIMEOUT_TOTAL = 30
+    DELAY_ENTRE_REQUISICOES = 3  # Reduzido para 3 segundos
+    DELAY_INICIAL = 2
     
     MAX_NOTICIAS_POR_FONTE = 5
-    MAX_NOTICIAS_TOTAL = 5000
-    MAX_TRABALHADORES = 10
+    MAX_NOTICIAS_TOTAL = 8000  # Aumentado para 8000
+    MAX_TRABALHADORES = 15
     MAX_TENTATIVAS = 2
     
+    # NOVO: Expurgo automático
+    DIAS_MAXIMO_NOTICIA = 3  # Notícias com mais de 3 dias são removidas
+    
+    # NOVO: Rodízio de fontes
+    FONTES_POR_VARREDURA = 40  # Varrer 40 fontes por ciclo
+    TOTAL_FONTES = 120  # 120 fontes no total
+    
     HEADERS = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8,es;q=0.7,fr;q=0.6',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
     }
     
-    TIMEZONE = -3  # Brasilia (UTC-3)
+    TIMEZONE = -3
 
 config = Config()
 
 # ============================================
-# FUNCAO PARA HORARIO DE BRASILIA
+# FUNCOES DE HORARIO
 # ============================================
 
 def horario_brasilia():
-    """Retorna o horario atual de Brasilia"""
     utc = datetime.utcnow()
     brasilia = utc - timedelta(hours=3)
     return brasilia.strftime('%d/%m/%Y %H:%M:%S')
 
 def hora_brasilia():
-    """Retorna apenas a hora de Brasilia"""
     utc = datetime.utcnow()
     brasilia = utc - timedelta(hours=3)
     return brasilia.strftime('%H:%M')
 
 # ============================================
-# LOGGING PROFISSIONAL
+# LOGGING
 # ============================================
 
 logging.basicConfig(
@@ -209,7 +203,7 @@ logging.basicConfig(
 logger = logging.getLogger('ANTIFA-RADAR')
 
 # ============================================
-# PALAVRAS PROIBIDAS (FILTRO DE CASINO)
+# PALAVRAS PROIBIDAS (FILTRO)
 # ============================================
 
 PALAVRAS_PROIBIDAS = [
@@ -217,7 +211,11 @@ PALAVRAS_PROIBIDAS = [
     'roulette', 'blackjack', 'baccarat', 'vegas', 'lottery', 'sweepstakes',
     'crypto', 'bitcoin', 'investimento', 'renda extra', 'ganhe dinheiro',
     'milagroso', 'segredo', 'fórmula', 'curso', 'download', 'gratis',
-    'sexo', 'porn', 'onlyfans', 'hot', 'universitario', 'trabalhe em casa'
+    'sexo', 'porn', 'onlyfans', 'hot', 'universitario', 'trabalhe em casa',
+    # Conteúdo sem propósito
+    'fofoca', 'celebridade', 'bbb', 'big brother', 'reality show',
+    'novela', 'famoso', 'famosa', 'lifestyle', 'moda', 'viagem',
+    'receita', 'culinária', 'esporte', 'futebol', 'jogador',
 ]
 
 # ============================================
@@ -225,8 +223,6 @@ PALAVRAS_PROIBIDAS = [
 # ============================================
 
 class ProxyManager:
-    """Gerencia rotacao de proxies para evitar bloqueios"""
-    
     def __init__(self):
         self.proxies = []
         self.blacklist = set()
@@ -237,7 +233,6 @@ class ProxyManager:
             fontes_proxy = [
                 'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all',
                 'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
-                'https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt',
             ]
             
             for url in fontes_proxy:
@@ -254,7 +249,6 @@ class ProxyManager:
             
             self.proxies = list(set(self.proxies))
             logger.info(f"[OK] Proxys carregados: {len(self.proxies)}")
-            
         except Exception as e:
             logger.error(f"[Erro] ao carregar proxies: {e}")
     
@@ -271,8 +265,6 @@ proxy_manager = ProxyManager()
 # ============================================
 
 class SistemaAntiSono:
-    """Sistema que faz ping no próprio site para não dormir"""
-    
     def __init__(self):
         self.ativo = True
         self.url_do_site = "https://sharp-front-16-rj.onrender.com"
@@ -282,101 +274,343 @@ class SistemaAntiSono:
         thread = threading.Thread(target=self._loop_ping)
         thread.daemon = True
         thread.start()
-        logger.info("[Anti-Sono] Sistema ativado - Ping a cada 5 minutos")
+        logger.info("[Anti-Sono] Sistema ativado")
     
     def _loop_ping(self):
         while self.ativo:
             try:
-                response = requests.get(self.url_do_site, timeout=10)
+                requests.get(self.url_do_site, timeout=10)
                 self.contador_pings += 1
-                logger.info(f"[Anti-Sono] Ping #{self.contador_pings} - Status: {response.status_code}")
+                logger.info(f"[Anti-Sono] Ping #{self.contador_pings}")
                 requests.get(f"{self.url_do_site}/api/stats", timeout=5)
-            except Exception as e:
-                logger.error(f"[Anti-Sono] Erro no ping: {e}")
+            except:
+                pass
             time.sleep(300)
 
 # ============================================
-# FONTES CONFIÁVEIS (EXPANDIDO - 44 FONTES)
+# CLASSIFICADOR AUTOMÁTICO DE NOTÍCIAS
+# ============================================
+
+class ClassificadorNoticias:
+    """Classifica notícias automaticamente baseado no conteúdo"""
+    
+    # Palavras-chave para cada categoria
+    PALAVRAS_ANTIFA = [
+        'protesto', 'greve', 'movimento', 'resistência', 'direitos', 
+        'ativismo', 'luta', 'ocupação', 'mst', 'sem terra', 'indígena', 
+        'quilombola', 'lgbt', 'feminismo', 'negro', 'racismo', 'fascismo',
+        'antifa', 'anarquista', 'comunista', 'socialista', 'manifestação',
+        'sindicato', 'trabalhador', 'popular', 'massacre', 'violência policial'
+    ]
+    
+    PALAVRAS_GEOPOLITICA = [
+        'guerra', 'conflito', 'rússia', 'ucrânia', 'china', 'eua', 
+        'estados unidos', 'otan', 'nato', 'sanções', 'imperialismo', 
+        'colonização', 'fronteira', 'geopolítica', 'tensão', 'ataque',
+        'bomba', 'míssil', 'exército', 'militar', 'tratado', 'aliança',
+        'oriente médio', 'palestina', 'israel', 'faixa de gaza'
+    ]
+    
+    PALAVRAS_NACIONAL = [
+        'brasil', 'lula', 'bolsonaro', 'congresso', 'stf', 'brasileiro',
+        'brasília', 'são paulo', 'rio de janeiro', 'governo federal',
+        'eleição', 'voto', 'política brasileira', 'câmara', 'senado'
+    ]
+    
+    @classmethod
+    def classificar(cls, titulo, resumo, fonte_pais, fonte_nome):
+        """Classifica notícia baseado em múltiplos fatores"""
+        texto = (titulo + " " + resumo).lower()
+        
+        # PRIORIDADE 1: ANTIFA (lutas sociais)
+        if any(p in texto for p in cls.PALAVRAS_ANTIFA):
+            return 'antifa'
+        
+        # PRIORIDADE 2: GEOPOLÍTICA
+        if any(p in texto for p in cls.PALAVRAS_GEOPOLITICA):
+            return 'geopolitica'
+        
+        # PRIORIDADE 3: NACIONAL (se for do Brasil)
+        if fonte_pais == 'Brasil' or any(p in texto for p in cls.PALAVRAS_NACIONAL):
+            return 'nacional'
+        
+        # PADRÃO: Internacional
+        return 'internacional'
+
+classificador = ClassificadorNoticias()
+
+# ============================================
+# DETECTOR DE DUPLICATAS
+# ============================================
+
+class DetectorDuplicatas:
+    """Detecta notícias similares para evitar repetição"""
+    
+    @staticmethod
+    def sao_similares(titulo1, titulo2):
+        """Verifica se dois títulos são similares"""
+        # Remove pontuação e espaços extras
+        t1 = re.sub(r'[^\w\s]', '', titulo1.lower()).strip()
+        t2 = re.sub(r'[^\w\s]', '', titulo2.lower()).strip()
+        
+        # Se são idênticos
+        if t1 == t2:
+            return True
+        
+        # Se um contém o outro
+        if len(t1) > 10 and len(t2) > 10:
+            if t1 in t2 or t2 in t1:
+                return True
+        
+        # Calcula similaridade por palavras
+        palavras1 = set(t1.split())
+        palavras2 = set(t2.split())
+        
+        if len(palavras1) > 3 and len(palavras2) > 3:
+            intersecao = palavras1.intersection(palavras2)
+            similaridade = len(intersecao) / max(len(palavras1), len(palavras2))
+            return similaridade > 0.65  # 65% similar
+        
+        return False
+
+detector = DetectorDuplicatas()
+
+# ============================================
+# SISTEMA DE PRIORIDADE
+# ============================================
+
+class SistemaPrioridade:
+    """Define quanto tempo cada notícia deve ficar"""
+    
+    PRIORIDADE_ALTA = 5  # dias
+    PRIORIDADE_MEDIA = 3  # dias
+    PRIORIDADE_BAIXA = 1  # dia
+    
+    FONTES_PRIORITARIAS = [
+        'Brasil de Fato', 'MST', 'Al Jazeera', 'The Intercept',
+        'Democracy Now', 'TeleSUR', 'Jacobin', 'Carta Capital'
+    ]
+    
+    @classmethod
+    def calcular_prioridade(cls, titulo, fonte):
+        """Retorna dias que a notícia deve ficar"""
+        titulo_lower = titulo.lower()
+        
+        # Fontes prioritárias
+        if fonte in cls.FONTES_PRIORITARIAS:
+            return cls.PRIORIDADE_ALTA
+        
+        # Conteúdo urgente
+        if any(p in titulo_lower for p in ['urgente', 'breaking', 'ao vivo', 'agora']):
+            return cls.PRIORIDADE_ALTA
+        
+        # Conteúdo relevante
+        if any(p in titulo_lower for p in ['guerra', 'conflito', 'protesto', 'greve']):
+            return cls.PRIORIDADE_MEDIA
+        
+        # Padrão
+        return cls.PRIORIDADE_BAIXA
+
+prioridade = SistemaPrioridade()
+
+# ============================================
+# SCRAPER GENÉRICO PARA SITES SEM RSS
+# ============================================
+
+class ScraperGenerico:
+    """Tenta extrair notícias de qualquer site"""
+    
+    @staticmethod
+    def extrair_noticias(url_base):
+        """Tenta encontrar títulos e links em qualquer site"""
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            }
+            
+            response = requests.get(url_base, headers=headers, timeout=10)
+            if response.status_code != 200:
+                return []
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            noticias = []
+            
+            # Procura por links com textos significativos
+            for link in soup.find_all('a', href=True):
+                texto = link.get_text().strip()
+                href = link['href']
+                
+                if texto and len(texto) > 20 and len(texto) < 100:
+                    # Ignora links de navegação
+                    if any(p in texto.lower() for p in ['menu', 'login', 'cadastro', 'home']):
+                        continue
+                    
+                    # Constrói URL completa
+                    if href.startswith('/'):
+                        href = url_base + href
+                    elif not href.startswith('http'):
+                        href = url_base + '/' + href
+                    
+                    noticias.append({
+                        'titulo': texto,
+                        'link': href
+                    })
+            
+            return noticias[:10]  # Retorna as 10 primeiras
+            
+        except Exception as e:
+            logger.debug(f"Erro no scraper genérico: {e}")
+            return []
+
+# ============================================
+# FONTES CONFIÁVEIS (120+ FONTES)
 # ============================================
 
 FONTES_CONFIAVEIS = [
-    # BRASIL (EXPANDIDO)
-    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'The Intercept Brasil', 'pais': 'Brasil', 'url': 'https://theintercept.com/brasil/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'Brasil 247', 'pais': 'Brasil', 'url': 'https://www.brasil247.com/feed', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'Diário do Centro do Mundo', 'pais': 'Brasil', 'url': 'https://www.diariodocentrodomundo.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'Revista Fórum', 'pais': 'Brasil', 'url': 'https://revistaforum.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'Jornal GGN', 'pais': 'Brasil', 'url': 'https://jornalggn.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'Conversa Afiada', 'pais': 'Brasil', 'url': 'https://conversaafiada.com.br/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    # ===== ANTIFA (Lutas sociais) - 35 FONTES =====
+    {'nome': 'Brasil de Fato', 'pais': 'Brasil', 'url': 'https://www.brasildefato.com.br/rss', 'categoria_base': 'antifa', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'MST', 'pais': 'Brasil', 'url': 'https://mst.org.br/feed/', 'categoria_base': 'antifa', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Outras Palavras', 'pais': 'Brasil', 'url': 'https://outraspalavras.net/feed/', 'categoria_base': 'antifa', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'alta'},
+    {'nome': 'CrimethInc', 'pais': 'Global', 'url': 'https://crimethinc.com/feeds/all.atom.xml', 'categoria_base': 'antifa', 'continente': 'Global', 'prioridade': 'alta'},
+    {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria_base': 'antifa', 'continente': 'Global', 'prioridade': 'alta'},
+    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Black Agenda Report', 'pais': 'USA', 'url': 'https://blackagendareport.com/feed', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'alta'},
+    {'nome': 'The Canary', 'pais': 'UK', 'url': 'https://www.thecanary.co/feed/', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Red Pepper', 'pais': 'UK', 'url': 'https://www.redpepper.org.uk/feed/', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Ceasefire Magazine', 'pais': 'UK', 'url': 'https://ceasefiremagazine.co.uk/feed/', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Green Left', 'pais': 'Australia', 'url': 'https://www.greenleft.org.au/feed', 'categoria_base': 'antifa', 'continente': 'Oceania', 'prioridade': 'media'},
+    {'nome': 'Peoples Dispatch', 'pais': 'India', 'url': 'https://peoplesdispatch.org/feed/', 'categoria_base': 'antifa', 'continente': 'Asia', 'prioridade': 'alta'},
+    {'nome': 'Resumen Latinoamericano', 'pais': 'Argentina', 'url': 'https://www.resumenlatinoamericano.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'La Izquierda Diario', 'pais': 'Mexico', 'url': 'https://www.laizquierdadiario.mx/feed', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'ANRed', 'pais': 'Argentina', 'url': 'https://www.anred.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'CounterPunch', 'pais': 'USA', 'url': 'https://www.counterpunch.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'ZNet', 'pais': 'USA', 'url': 'https://znetwork.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Toward Freedom', 'pais': 'USA', 'url': 'https://towardfreedom.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'baixa'},
+    {'nome': 'Waging Nonviolence', 'pais': 'USA', 'url': 'https://wagingnonviolence.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Popular Resistance', 'pais': 'USA', 'url': 'https://popularresistance.org/feed/', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Labor Notes', 'pais': 'USA', 'url': 'https://labornotes.org/feed', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Organizing Work', 'pais': 'USA', 'url': 'https://organizing.work/feed/', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'baixa'},
+    {'nome': 'Briarpatch Magazine', 'pais': 'Canada', 'url': 'https://briarpatchmagazine.com/feed', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'baixa'},
+    {'nome': 'Canadian Dimension', 'pais': 'Canada', 'url': 'https://canadiandimension.com/feed', 'categoria_base': 'antifa', 'continente': 'America do Norte', 'prioridade': 'baixa'},
+    {'nome': 'Peace News', 'pais': 'UK', 'url': 'https://peacenews.info/feed', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'baixa'},
+    {'nome': 'SchNEWS', 'pais': 'UK', 'url': 'https://www.schnews.org.uk/feed/', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'baixa'},
+    {'nome': 'Freedom News', 'pais': 'UK', 'url': 'https://freedomnews.org.uk/feed/', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'baixa'},
+    {'nome': 'Libcom.org', 'pais': 'UK', 'url': 'https://libcom.org/feed', 'categoria_base': 'antifa', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Anarkismo.net', 'pais': 'Global', 'url': 'https://www.anarkismo.net/feed', 'categoria_base': 'antifa', 'continente': 'Global', 'prioridade': 'media'},
+    {'nome': 'A-Infos', 'pais': 'Global', 'url': 'https://www.ainfos.ca/feed', 'categoria_base': 'antifa', 'continente': 'Global', 'prioridade': 'baixa'},
     
-    # PORTUGAL
-    {'nome': 'Esquerda.net', 'pais': 'Portugal', 'url': 'https://www.esquerda.net/rss.xml', 'categoria': 'antifa', 'continente': 'Europa'},
-    {'nome': 'Público', 'pais': 'Portugal', 'url': 'https://feeds.feedburner.com/PublicoRSS', 'categoria': 'geopolitica', 'continente': 'Europa'},
+    # ===== GEOPOLÍTICA - 30 FONTES =====
+    {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'The Palestine Chronicle', 'pais': 'Palestina', 'url': 'https://www.palestinechronicle.com/feed/', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'Mondoweiss', 'pais': 'USA', 'url': 'https://mondoweiss.net/feed/', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'Electronic Intifada', 'pais': 'Palestina', 'url': 'https://electronicintifada.net/rss.xml', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'Le Monde Diplomatique', 'pais': 'França', 'url': 'https://mondediplo.com/feed', 'categoria_base': 'geopolitica', 'continente': 'Europa', 'prioridade': 'alta'},
+    {'nome': 'MintPress News', 'pais': 'USA', 'url': 'https://www.mintpressnews.com/feed', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'alta'},
+    {'nome': 'Antiwar.com', 'pais': 'USA', 'url': 'https://antiwar.com/feed/', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'alta'},
+    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria_base': 'geopolitica', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Público', 'pais': 'Portugal', 'url': 'https://feeds.feedburner.com/PublicoRSS', 'categoria_base': 'geopolitica', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Foreign Policy', 'pais': 'USA', 'url': 'https://foreignpolicy.com/feed/', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'The Diplomat', 'pais': 'Japão', 'url': 'https://thediplomat.com/feed/', 'categoria_base': 'geopolitica', 'continente': 'Asia', 'prioridade': 'media'},
+    {'nome': 'War on the Rocks', 'pais': 'USA', 'url': 'https://warontherocks.com/feed/', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Small Wars Journal', 'pais': 'USA', 'url': 'https://smallwarsjournal.com/feed', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'baixa'},
+    {'nome': 'Council on Hemispheric Affairs', 'pais': 'USA', 'url': 'https://coha.org/feed/', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'NACLA', 'pais': 'USA', 'url': 'https://nacla.org/feed', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'MERIP', 'pais': 'USA', 'url': 'https://merip.org/feed/', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'Jadaliyya', 'pais': 'USA', 'url': 'https://www.jadaliyya.com/feed', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'Al-Shabaka', 'pais': 'Palestina', 'url': 'https://al-shabaka.org/feed/', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'B'Tselem', 'pais': 'Israel', 'url': 'https://www.btselem.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'IRIN News', 'pais': 'Global', 'url': 'https://www.irinnews.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'media'},
+    {'nome': 'The New Humanitarian', 'pais': 'Global', 'url': 'https://www.thenewhumanitarian.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'media'},
+    {'nome': 'Refworld', 'pais': 'Global', 'url': 'https://www.refworld.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'baixa'},
+    {'nome': 'ICRC News', 'pais': 'Global', 'url': 'https://www.icrc.org/en/rss', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'media'},
+    {'nome': 'UN News', 'pais': 'Global', 'url': 'https://news.un.org/feed/view/en', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'media'},
+    {'nome': 'ReliefWeb', 'pais': 'Global', 'url': 'https://reliefweb.int/feed', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'media'},
+    {'nome': 'Chatham House', 'pais': 'UK', 'url': 'https://www.chathamhouse.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'ICG', 'pais': 'Global', 'url': 'https://www.crisisgroup.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'alta'},
+    {'nome': 'Stratfor', 'pais': 'USA', 'url': 'https://worldview.stratfor.com/feed', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Geopolitical Monitor', 'pais': 'Canada', 'url': 'https://www.geopoliticalmonitor.com/feed/', 'categoria_base': 'geopolitica', 'continente': 'America do Norte', 'prioridade': 'baixa'},
     
-    # AMÉRICA LATINA
-    {'nome': 'Pagina 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'La Jornada', 'pais': 'Mexico', 'url': 'https://www.jornada.com.mx/rss', 'categoria': 'antifa', 'continente': 'America do Norte'},
-    {'nome': 'TeleSUR', 'pais': 'Venezuela', 'url': 'https://www.telesurtv.net/feed', 'categoria': 'geopolitica', 'continente': 'America do Sul'},
-    {'nome': 'El País América', 'pais': 'Espanha', 'url': 'https://elpais.com/america/feed/', 'categoria': 'geopolitica', 'continente': 'Europa'},
-    {'nome': 'Resumen Latinoamericano', 'pais': 'Argentina', 'url': 'https://www.resumenlatinoamericano.org/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
-    {'nome': 'La Izquierda Diario', 'pais': 'Mexico', 'url': 'https://www.laizquierdadiario.mx/feed', 'categoria': 'antifa', 'continente': 'America do Norte'},
-    {'nome': 'ANRed', 'pais': 'Argentina', 'url': 'https://www.anred.org/feed/', 'categoria': 'antifa', 'continente': 'America do Sul'},
+    # ===== NACIONAL (Brasil) - 25 FONTES =====
+    {'nome': 'Carta Capital', 'pais': 'Brasil', 'url': 'https://www.cartacapital.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'The Intercept Brasil', 'pais': 'Brasil', 'url': 'https://theintercept.com/brasil/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Brasil 247', 'pais': 'Brasil', 'url': 'https://www.brasil247.com/feed', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Diário do Centro do Mundo', 'pais': 'Brasil', 'url': 'https://www.diariodocentrodomundo.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Revista Fórum', 'pais': 'Brasil', 'url': 'https://revistaforum.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Jornal GGN', 'pais': 'Brasil', 'url': 'https://jornalggn.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Conversa Afiada', 'pais': 'Brasil', 'url': 'https://conversaafiada.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Agência Pública', 'pais': 'Brasil', 'url': 'https://apublica.org/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Repórter Brasil', 'pais': 'Brasil', 'url': 'https://reporterbrasil.org.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'De Olho nos Ruralistas', 'pais': 'Brasil', 'url': 'https://deolhonosruralistas.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Observatório do Clima', 'pais': 'Brasil', 'url': 'https://www.oc.eco.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'InfoAmazônia', 'pais': 'Brasil', 'url': 'https://infoamazonia.org/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Amazonia Real', 'pais': 'Brasil', 'url': 'https://amazoniareal.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Sul21', 'pais': 'Brasil', 'url': 'https://www.sul21.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Brasil de Fato RS', 'pais': 'Brasil', 'url': 'https://www.brasildefators.com.br/feed', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Brasil de Fato MG', 'pais': 'Brasil', 'url': 'https://www.brasildefatomg.com.br/feed', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Brasil de Fato SP', 'pais': 'Brasil', 'url': 'https://www.brasildefatosp.com.br/feed', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Brasil de Fato PE', 'pais': 'Brasil', 'url': 'https://www.brasildefatope.com.br/feed', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Brasil de Fato BA', 'pais': 'Brasil', 'url': 'https://www.brasildefatoba.com.br/feed', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Mídia Ninja', 'pais': 'Brasil', 'url': 'https://midianinja.org/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Jornalistas Livres', 'pais': 'Brasil', 'url': 'https://jornalistaslivres.org/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Ponte Jornalismo', 'pais': 'Brasil', 'url': 'https://ponte.org/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'Agência Mural', 'pais': 'Brasil', 'url': 'https://www.agenciamural.org.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Marco Zero Conteúdo', 'pais': 'Brasil', 'url': 'https://marcozero.org/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Coletivo Bereia', 'pais': 'Brasil', 'url': 'https://coletivobereia.com.br/feed/', 'categoria_base': 'nacional', 'continente': 'America do Sul', 'prioridade': 'baixa'},
     
-    # USA / INTERNACIONAL
-    {'nome': 'Its Going Down', 'pais': 'USA', 'url': 'https://itsgoingdown.org/feed/', 'categoria': 'anarquista', 'continente': 'America do Norte'},
-    {'nome': 'CrimethInc', 'pais': 'Global', 'url': 'https://crimethinc.com/feeds/all.atom.xml', 'categoria': 'anarquista', 'continente': 'Global'},
-    {'nome': 'ROAR Magazine', 'pais': 'Global', 'url': 'https://roarmag.org/feed/', 'categoria': 'antifa', 'continente': 'Global'},
-    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria': 'antifa', 'continente': 'America do Norte'},
-    {'nome': 'Truthout', 'pais': 'USA', 'url': 'https://truthout.org/feed/', 'categoria': 'antifa', 'continente': 'America do Norte'},
-    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria': 'comunista', 'continente': 'America do Norte'},
-    {'nome': 'Novara Media', 'pais': 'UK', 'url': 'https://novaramedia.com/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
-    {'nome': 'Open Democracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/en/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
-    {'nome': 'Common Dreams', 'pais': 'USA', 'url': 'https://www.commondreams.org/feed', 'categoria': 'antifa', 'continente': 'America do Norte'},
-    {'nome': 'MintPress News', 'pais': 'USA', 'url': 'https://www.mintpressnews.com/feed', 'categoria': 'geopolitica', 'continente': 'America do Norte'},
-    {'nome': 'Antiwar.com', 'pais': 'USA', 'url': 'https://antiwar.com/feed/', 'categoria': 'geopolitica', 'continente': 'America do Norte'},
-    {'nome': 'Black Agenda Report', 'pais': 'USA', 'url': 'https://blackagendareport.com/feed', 'categoria': 'antifa', 'continente': 'America do Norte'},
-    
-    # ORIENTE MÉDIO / ÁFRICA
-    {'nome': 'Al Jazeera', 'pais': 'Qatar', 'url': 'https://www.aljazeera.com/xml/rss/all.xml', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
-    {'nome': 'Middle East Eye', 'pais': 'UK', 'url': 'https://www.middleeasteye.net/rss', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
-    {'nome': 'The Palestine Chronicle', 'pais': 'Palestina', 'url': 'https://www.palestinechronicle.com/feed/', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
-    {'nome': 'Mondoweiss', 'pais': 'USA', 'url': 'https://mondoweiss.net/feed/', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
-    {'nome': 'Electronic Intifada', 'pais': 'Palestina', 'url': 'https://electronicintifada.net/rss.xml', 'categoria': 'geopolitica', 'continente': 'Oriente Medio'},
-    
-    # EUROPA
-    {'nome': 'Le Monde Diplomatique', 'pais': 'França', 'url': 'https://mondediplo.com/feed', 'categoria': 'geopolitica', 'continente': 'Europa'},
-    {'nome': 'The Canary', 'pais': 'UK', 'url': 'https://www.thecanary.co/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
-    {'nome': 'Red Pepper', 'pais': 'UK', 'url': 'https://www.redpepper.org.uk/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
-    {'nome': 'Ceasefire Magazine', 'pais': 'UK', 'url': 'https://ceasefiremagazine.co.uk/feed/', 'categoria': 'antifa', 'continente': 'Europa'},
-    
-    # ÁSIA / OCEANIA
-    {'nome': 'Green Left', 'pais': 'Australia', 'url': 'https://www.greenleft.org.au/feed', 'categoria': 'antifa', 'continente': 'Oceania'},
-    {'nome': 'Peoples Dispatch', 'pais': 'India', 'url': 'https://peoplesdispatch.org/feed/', 'categoria': 'antifa', 'continente': 'Asia'},
+    # ===== INTERNACIONAL - 30 FONTES =====
+    {'nome': 'El País América', 'pais': 'Espanha', 'url': 'https://elpais.com/america/feed/', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'alta'},
+    {'nome': 'Pagina 12', 'pais': 'Argentina', 'url': 'https://www.pagina12.com.ar/rss', 'categoria_base': 'internacional', 'continente': 'America do Sul', 'prioridade': 'alta'},
+    {'nome': 'La Jornada', 'pais': 'Mexico', 'url': 'https://www.jornada.com.mx/rss', 'categoria_base': 'internacional', 'continente': 'America do Norte', 'prioridade': 'alta'},
+    {'nome': 'The Intercept', 'pais': 'USA', 'url': 'https://theintercept.com/feed/?lang=en', 'categoria_base': 'internacional', 'continente': 'America do Norte', 'prioridade': 'alta'},
+    {'nome': 'Jacobin', 'pais': 'USA', 'url': 'https://jacobin.com/feed', 'categoria_base': 'internacional', 'continente': 'America do Norte', 'prioridade': 'alta'},
+    {'nome': 'The Guardian', 'pais': 'UK', 'url': 'https://www.theguardian.com/world/rss', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Le Monde', 'pais': 'França', 'url': 'https://www.lemonde.fr/rss', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Der Spiegel', 'pais': 'Alemanha', 'url': 'https://www.spiegel.de/international/index.rss', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'El Diario', 'pais': 'Espanha', 'url': 'https://www.eldiario.es/rss', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Clarin', 'pais': 'Argentina', 'url': 'https://www.clarin.com/rss', 'categoria_base': 'internacional', 'continente': 'America do Sul', 'prioridade': 'baixa'},
+    {'nome': 'La Tercera', 'pais': 'Chile', 'url': 'https://www.latercera.com/feed/', 'categoria_base': 'internacional', 'continente': 'America do Sul', 'prioridade': 'baixa'},
+    {'nome': 'El Comercio', 'pais': 'Peru', 'url': 'https://elcomercio.pe/feed/', 'categoria_base': 'internacional', 'continente': 'America do Sul', 'prioridade': 'baixa'},
+    {'nome': 'El Universal', 'pais': 'Mexico', 'url': 'https://www.eluniversal.com.mx/rss', 'categoria_base': 'internacional', 'continente': 'America do Norte', 'prioridade': 'baixa'},
+    {'nome': 'La República', 'pais': 'Colombia', 'url': 'https://www.larepublica.co/feed', 'categoria_base': 'internacional', 'continente': 'America do Sul', 'prioridade': 'baixa'},
+    {'nome': 'Folha de SP', 'pais': 'Brasil', 'url': 'https://feeds.folha.uol.com.br/mundo/rss091.xml', 'categoria_base': 'internacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'O Globo', 'pais': 'Brasil', 'url': 'https://oglobo.globo.com/rss/mundo', 'categoria_base': 'internacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'Estadão', 'pais': 'Brasil', 'url': 'https://www.estadao.com.br/rss/internacional', 'categoria_base': 'internacional', 'continente': 'America do Sul', 'prioridade': 'media'},
+    {'nome': 'BBC Brasil', 'pais': 'UK', 'url': 'https://www.bbc.com/portuguese/feed', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'alta'},
+    {'nome': 'Deutsche Welle', 'pais': 'Alemanha', 'url': 'https://www.dw.com/feed/portuguese', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'alta'},
+    {'nome': 'RFI', 'pais': 'França', 'url': 'https://www.rfi.fr/feed/portuguese', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'alta'},
+    {'nome': 'Voice of America', 'pais': 'USA', 'url': 'https://www.voanews.com/feed', 'categoria_base': 'internacional', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Global Voices', 'pais': 'Global', 'url': 'https://globalvoices.org/feed/', 'categoria_base': 'internacional', 'continente': 'Global', 'prioridade': 'alta'},
+    {'nome': 'IPS News', 'pais': 'Global', 'url': 'https://www.ipsnews.net/feed/', 'categoria_base': 'internacional', 'continente': 'Global', 'prioridade': 'alta'},
+    {'nome': 'The Conversation', 'pais': 'Global', 'url': 'https://theconversation.com/global/feed', 'categoria_base': 'internacional', 'continente': 'Global', 'prioridade': 'media'},
+    {'nome': 'Equal Times', 'pais': 'Global', 'url': 'https://www.equaltimes.org/feed', 'categoria_base': 'internacional', 'continente': 'Global', 'prioridade': 'media'},
+    {'nome': 'openDemocracy', 'pais': 'UK', 'url': 'https://www.opendemocracy.net/feed', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'alta'},
+    {'nome': 'New Internationalist', 'pais': 'UK', 'url': 'https://newint.org/feed', 'categoria_base': 'internacional', 'continente': 'Europa', 'prioridade': 'media'},
+    {'nome': 'Yes! Magazine', 'pais': 'USA', 'url': 'https://www.yesmagazine.org/feed', 'categoria_base': 'internacional', 'continente': 'America do Norte', 'prioridade': 'media'},
+    {'nome': 'Resilience', 'pais': 'USA', 'url': 'https://www.resilience.org/feed/', 'categoria_base': 'internacional', 'continente': 'America do Norte', 'prioridade': 'baixa'},
+    {'nome': 'Shareable', 'pais': 'USA', 'url': 'https://www.shareable.net/feed/', 'categoria_base': 'internacional', 'continente': 'America do Norte', 'prioridade': 'baixa'},
 ]
 
-# TOTAL: 44 FONTES
+# TOTAL: 35 + 30 + 25 + 30 = 120 FONTES!
 
 # ============================================
-# SCRAPER DO GLINT.TRADE (SEM CITAR)
+# SCRAPER DO GLINT.TRADE (ANONIMIZADO)
 # ============================================
 
 class GlintTradeScraper:
-    """Scraper do Glint Trade - aparece como 'Análise Global' sem mencionar a fonte"""
-    
     def __init__(self):
         self.url_base = "https://glint.trade"
         self.ultima_busca = None
         
     def buscar_noticias(self):
-        """Busca notícias do Glint Trade e transforma"""
         try:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'text/html,application/xhtml+xml',
-                'Accept-Language': 'pt-BR,pt;q=0.9'
             }
             
             response = requests.get(self.url_base, headers=headers, timeout=10)
@@ -384,39 +618,30 @@ class GlintTradeScraper:
                 return []
             
             soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Tenta encontrar notícias/títulos
             titulos = []
             
-            # Procura por tags comuns de título
             for tag in soup.find_all(['h1', 'h2', 'h3', 'h4']):
                 texto = tag.get_text().strip()
                 if texto and len(texto) > 15 and len(texto) < 100:
-                    # Filtra palavras genéricas
-                    palavras_proibidas = ['menu', 'login', 'sign', 'register', 'cookie']
-                    if not any(p in texto.lower() for p in palavras_proibidas):
+                    if not any(p in texto.lower() for p in ['menu', 'login', 'sign']):
                         titulos.append(texto)
             
-            # Procura por links
             for link in soup.find_all('a', href=True):
                 texto = link.get_text().strip()
                 href = link['href']
                 if texto and len(texto) > 15 and len(texto) < 80:
-                    if not texto.lower().startswith(('login', 'sign', 'menu')):
-                        # Constrói URL completa
-                        if href.startswith('/'):
-                            href = self.url_base + href
-                        elif not href.startswith('http'):
-                            href = self.url_base + '/' + href
-                        
-                        titulos.append({
-                            'texto': texto,
-                            'link': href
-                        })
+                    if href.startswith('/'):
+                        href = self.url_base + href
+                    elif not href.startswith('http'):
+                        href = self.url_base + '/' + href
+                    
+                    titulos.append({
+                        'texto': texto,
+                        'link': href
+                    })
             
-            # Se encontrou títulos, transforma em notícias
             noticias_glint = []
-            for item in titulos[:10]:  # Pega os 10 primeiros
+            for item in titulos[:8]:
                 if isinstance(item, str):
                     titulo = item
                     link = self.url_base
@@ -424,48 +649,30 @@ class GlintTradeScraper:
                     titulo = item['texto']
                     link = item['link']
                 
-                # Categoriza automaticamente
-                categoria = self._categorizar_titulo(titulo)
+                # Usa classificador automático
+                categoria = classificador.classificar(titulo, '', 'Global', 'Análise Global')
                 
                 noticias_glint.append({
                     'titulo': titulo,
                     'titulo_traduzido': tradutor.traduzir(titulo),
                     'link': link,
                     'categoria': categoria,
-                    'fonte_original': 'Análise Global'  # NÃO MENCIONA GLINT
                 })
             
-            logger.info(f"[Glint] Encontradas {len(noticias_glint)} notícias (anonimizado)")
             return noticias_glint
             
         except Exception as e:
-            logger.debug(f"[Glint] Erro na busca: {e}")
+            logger.debug(f"[Glint] Erro: {e}")
             return []
-    
-    def _categorizar_titulo(self, titulo):
-        """Categoriza o título automaticamente"""
-        titulo_lower = titulo.lower()
-        
-        if any(p in titulo_lower for p in ['rússia', 'russia', 'ucrânia', 'ukraine', 'guerra', 'war', 'conflito']):
-            return 'geopolitica'
-        elif any(p in titulo_lower for p in ['economia', 'economy', 'mercado', 'market', 'finance']):
-            return 'economia'
-        elif any(p in titulo_lower for p in ['brasil', 'brazil', 'lula', 'bolsonaro', 'congresso']):
-            return 'nacional'
-        elif any(p in titulo_lower for p in ['china', 'eua', 'us', 'estados unidos', 'europa', 'europe']):
-            return 'geopolitica'
-        else:
-            return 'internacional'
 
 glint_scraper = GlintTradeScraper()
 
 # ============================================
-# SISTEMA DE RADAR
+# SISTEMA DE RADAR (ATUALIZADO)
 # ============================================
 
 @dataclass
 class Noticia:
-    """Estrutura de dados para noticias"""
     id: str
     fonte: str
     pais: str
@@ -478,11 +685,11 @@ class Noticia:
     link: str
     data: str
     publicada_em: str
+    data_coleta: str  # Data em que foi coletada
+    dias_para_expirar: int = 3  # Dias que vai ficar
     destaque: bool = False
 
 class RadarAutomatico:
-    """Sistema de radar automatico"""
-    
     def __init__(self):
         self.fontes_ativas = []
         self.estatisticas = {
@@ -490,8 +697,13 @@ class RadarAutomatico:
             'continentes': set(),
             'paises': set(),
             'categorias': defaultdict(int),
+            'antifa': 0,
+            'geopolitica': 0,
+            'nacional': 0,
+            'internacional': 0,
         }
         self.radar_ativo = False
+        self.ultimas_fontes = []  # Para controle do rodízio
         
     def iniciar_radar_automatico(self):
         if self.radar_ativo:
@@ -500,7 +712,7 @@ class RadarAutomatico:
         thread = threading.Thread(target=self._loop_radar)
         thread.daemon = True
         thread.start()
-        logger.info("[Radar] Radar automatico iniciado")
+        logger.info("[Radar] Radar automatico iniciado - 120 fontes em rodízio")
     
     def _loop_radar(self):
         time.sleep(config.DELAY_INICIAL)
@@ -514,15 +726,22 @@ class RadarAutomatico:
     
     def _executar_varredura(self):
         logger.info(f"\n{'='*60}")
-        logger.info(f"[Radar] [{horario_brasilia()}] Iniciando varredura em 44 fontes + Glint")
+        logger.info(f"[Radar] [{horario_brasilia()}] Iniciando varredura - 120 fontes em rodízio")
         logger.info(f"{'='*60}")
         
         noticias_antigas = self._carregar_noticias()
+        
+        # ===== EXPURGO AUTOMÁTICO =====
+        noticias_antigas = self._expurgar_noticias_antigas(noticias_antigas)
+        
         links_antigos = {n.link for n in noticias_antigas}
         todas_noticias_novas = []
         
-        # ===== BUSCA NAS FONTES RSS =====
-        for fonte in FONTES_CONFIAVEIS:
+        # ===== SELECIONA FONTES PARA ESTA VARREDURA (RODÍZIO) =====
+        fontes_para_varrer = self._selecionar_fontes_rodizio()
+        
+        # ===== BUSCA NAS FONTES SELECIONADAS =====
+        for fonte in fontes_para_varrer:
             time.sleep(config.DELAY_ENTRE_REQUISICOES)
             try:
                 response = requests.get(fonte['url'], headers=config.HEADERS, timeout=config.TIMEOUT_REQUISICAO)
@@ -533,6 +752,8 @@ class RadarAutomatico:
                         for entrada in feed.entries[:config.MAX_NOTICIAS_POR_FONTE]:
                             if entrada.link in links_antigos:
                                 continue
+                            
+                            # FILTRO DE CONTEÚDO SEM PROPÓSITO
                             titulo_lower = entrada.title.lower()
                             palavra_proibida = False
                             for palavra in PALAVRAS_PROIBIDAS:
@@ -541,6 +762,16 @@ class RadarAutomatico:
                                     break
                             if palavra_proibida:
                                 continue
+                            
+                            # VERIFICA DUPLICATA POR SIMILARIDADE
+                            duplicata = False
+                            for noticia_existente in noticias_antigas:
+                                if detector.sao_similares(entrada.title, noticia_existente.titulo_original):
+                                    duplicata = True
+                                    break
+                            if duplicata:
+                                continue
+                            
                             noticia = self._criar_noticia(fonte, entrada)
                             if noticia:
                                 noticias_fonte.append(noticia)
@@ -551,35 +782,48 @@ class RadarAutomatico:
                             self.estatisticas['fontes_funcionando'] += 1
                             self.estatisticas['continentes'].add(fonte['continente'])
                             self.estatisticas['paises'].add(fonte['pais'])
-                            self.estatisticas['categorias'][fonte['categoria']] += 1
-                            logger.info(f"  [OK] {fonte['nome']}: {len(noticias_fonte)} noticias")
+                            logger.info(f"  [OK] {fonte['categoria_base'].upper()}: {fonte['nome']} - {len(noticias_fonte)} noticias")
             except Exception as e:
                 logger.debug(f"  [Falha] {fonte['nome']}")
         
-        # ===== BUSCA NO GLINT.TRADE (ANONIMIZADO) =====
+        # ===== BUSCA NO GLINT.TRADE =====
         try:
             noticias_glint = glint_scraper.buscar_noticias()
             for item in noticias_glint:
                 if item['link'] in links_antigos:
                     continue
                 
-                # Cria noticia a partir do Glint
+                # Verifica duplicata
+                duplicata = False
+                for noticia_existente in noticias_antigas:
+                    if detector.sao_similares(item['titulo'], noticia_existente.titulo_original):
+                        duplicata = True
+                        break
+                if duplicata:
+                    continue
+                
+                categoria = item['categoria']
+                dias_expirar = prioridade.calcular_prioridade(item['titulo'], 'Análise Global')
+                
                 noticia = Noticia(
                     id=hashlib.md5(item['link'].encode()).hexdigest()[:8],
-                    fonte='Análise Global',  # NÃO MENCIONA GLINT
+                    fonte='Análise Global',
                     pais='Global',
                     continente='Global',
-                    categoria=item['categoria'],
+                    categoria=categoria,
                     titulo=item['titulo_traduzido'],
                     titulo_original=item['titulo'],
-                    resumo=f"Análise aprofundada sobre {item['titulo_traduzido'][:50]}... Clique para ler o conteúdo completo.",
+                    resumo=f"Análise sobre {item['titulo_traduzido'][:50]}...",
                     resumo_original=item['titulo'],
                     link=item['link'],
                     data=datetime.now().strftime('%Y-%m-%d %H:%M'),
-                    publicada_em=horario_brasilia()
+                    publicada_em=horario_brasilia(),
+                    data_coleta=datetime.now().strftime('%Y-%m-%d'),
+                    dias_para_expirar=dias_expirar
                 )
                 todas_noticias_novas.append(noticia)
-                logger.info(f"  [OK] Análise Global: +1 notícia")
+                self.estatisticas[categoria] += 1
+                logger.info(f"  [OK] Análise Global ({categoria}): +1")
         except Exception as e:
             logger.debug(f"  [Falha] Análise Global")
         
@@ -587,31 +831,81 @@ class RadarAutomatico:
             todas_noticias = todas_noticias_novas + noticias_antigas
             todas_noticias.sort(key=lambda x: x.data, reverse=True)
             todas_noticias = todas_noticias[:config.MAX_NOTICIAS_TOTAL]
+            
+            # Define destaques (5 mais recentes)
             for i, n in enumerate(todas_noticias[:5]):
                 n.destaque = True
+            
             self._salvar_noticias(todas_noticias)
+            
+            # Atualiza estatísticas
+            antifa = [n for n in todas_noticias if n.categoria == 'antifa']
+            geo = [n for n in todas_noticias if n.categoria == 'geopolitica']
+            nac = [n for n in todas_noticias if n.categoria == 'nacional']
+            inter = [n for n in todas_noticias if n.categoria == 'internacional']
+            
             logger.info(f"\n[OK] Varredura concluida")
-            logger.info(f"  Fontes ativas: {self.estatisticas['fontes_funcionando']}")
-            logger.info(f"  Noticias novas: {len(todas_noticias_novas)}")
-            logger.info(f"  Total: {len(todas_noticias)}")
+            logger.info(f"  ANTIFA: {len(antifa)}")
+            logger.info(f"  GEOPOLÍTICA: {len(geo)}")
+            logger.info(f"  NACIONAL: {len(nac)}")
+            logger.info(f"  INTERNACIONAL: {len(inter)}")
+            logger.info(f"  TOTAL: {len(todas_noticias)}")
+    
+    def _selecionar_fontes_rodizio(self):
+        """Seleciona 40 fontes diferentes a cada ciclo"""
+        total_fontes = len(FONTES_CONFIAVEIS)
+        
+        # Se não tem histórico, embaralha
+        if not self.ultimas_fontes:
+            indices = list(range(total_fontes))
+            random.shuffle(indices)
+            self.ultimas_fontes = indices[:config.FONTES_POR_VARREDURA]
+        else:
+            # Pega os próximos índices
+            ultimo_indice = (self.ultimas_fontes[-1] + 1) % total_fontes
+            novos_indices = []
+            for i in range(config.FONTES_POR_VARREDURA):
+                idx = (ultimo_indice + i) % total_fontes
+                novos_indices.append(idx)
+            self.ultimas_fontes = novos_indices
+        
+        fontes_selecionadas = [FONTES_CONFIAVEIS[i] for i in self.ultimas_fontes]
+        logger.info(f"  Rodízio: {len(fontes_selecionadas)} fontes selecionadas")
+        return fontes_selecionadas
+    
+    def _expurgar_noticias_antigas(self, noticias):
+        """Remove notícias com mais de 3 dias (ou conforme prioridade)"""
+        hoje = datetime.now()
+        noticias_recentes = []
+        
+        for n in noticias:
+            try:
+                data_coleta = datetime.strptime(n.data_coleta, '%Y-%m-%d')
+                dias_passados = (hoje - data_coleta).days
+                
+                # Se ainda está dentro do prazo, mantém
+                if dias_passados <= n.dias_para_expirar:
+                    noticias_recentes.append(n)
+            except:
+                # Se não conseguir parsear a data, mantém por segurança
+                noticias_recentes.append(n)
+        
+        expurgadas = len(noticias) - len(noticias_recentes)
+        if expurgadas > 0:
+            logger.info(f"  Expurgo: {expurgadas} notícias antigas removidas")
+        
+        return noticias_recentes
     
     def _criar_noticia(self, fonte, entrada):
         try:
             titulo_original = entrada.title
             titulo_traduzido = tradutor.traduzir(titulo_original)
             
-            # ===== EXTRAIR RESUMO DE MÚLTIPLAS FONTES =====
             resumo_original = ""
-            
-            # Tenta extrair de summary
             if hasattr(entrada, 'summary') and entrada.summary:
                 resumo_original = BeautifulSoup(entrada.summary, 'html.parser').get_text()
-            
-            # Se não tem summary, tenta description
             elif hasattr(entrada, 'description') and entrada.description:
                 resumo_original = BeautifulSoup(entrada.description, 'html.parser').get_text()
-            
-            # Se não tem description, tenta content
             elif hasattr(entrada, 'content') and entrada.content:
                 for content in entrada.content:
                     if content.get('type') == 'text/html' and content.value:
@@ -619,32 +913,42 @@ class RadarAutomatico:
                         if resumo_original:
                             break
             
-            # Se ainda não tem resumo, usa o título ou uma mensagem padrão
             if not resumo_original or len(resumo_original.strip()) < 20:
                 resumo_original = f"Leia o artigo completo sobre: {titulo_original[:100]}..."
             
-            # Traduz o resumo
             resumo_traduzido = tradutor.traduzir(resumo_original) if resumo_original else ""
             
-            # Limita o tamanho e adiciona reticências
             if resumo_traduzido and len(resumo_traduzido) > 200:
                 resumo_traduzido = resumo_traduzido[:200] + "..."
             elif not resumo_traduzido:
-                resumo_traduzido = "Clique para ler o artigo completo sobre esta notícia."
+                resumo_traduzido = "Clique para ler o artigo completo."
+            
+            # CLASSIFICAÇÃO AUTOMÁTICA
+            categoria = classificador.classificar(
+                titulo_original, 
+                resumo_original, 
+                fonte['pais'], 
+                fonte['nome']
+            )
+            
+            # PRIORIDADE (dias para expirar)
+            dias_expirar = prioridade.calcular_prioridade(titulo_original, fonte['nome'])
             
             return Noticia(
                 id=hashlib.md5(entrada.link.encode()).hexdigest()[:8],
                 fonte=fonte['nome'],
                 pais=fonte['pais'],
                 continente=fonte['continente'],
-                categoria=fonte['categoria'],
+                categoria=categoria,
                 titulo=titulo_traduzido,
                 titulo_original=titulo_original,
                 resumo=resumo_traduzido,
                 resumo_original=resumo_original[:200] + "..." if resumo_original and len(resumo_original) > 200 else resumo_original,
                 link=entrada.link,
                 data=entrada.get('published', datetime.now().strftime('%Y-%m-%d %H:%M')),
-                publicada_em=horario_brasilia()
+                publicada_em=horario_brasilia(),
+                data_coleta=datetime.now().strftime('%Y-%m-%d'),
+                dias_para_expirar=dias_expirar
             )
         except Exception as e:
             logger.debug(f"Erro ao criar noticia: {e}")
@@ -659,6 +963,11 @@ class RadarAutomatico:
                     noticias = []
                     for n in noticias_dict:
                         try:
+                            # Compatibilidade com versões anteriores
+                            if 'data_coleta' not in n:
+                                n['data_coleta'] = n.get('data', datetime.now().strftime('%Y-%m-%d'))[:10]
+                            if 'dias_para_expirar' not in n:
+                                n['dias_para_expirar'] = 3
                             noticias.append(Noticia(**n))
                         except:
                             pass
@@ -700,8 +1009,17 @@ def get_bandeira(pais):
         'Palestina': '🇵🇸',
         'França': '🇫🇷',
         'Espanha': '🇪🇸',
+        'Alemanha': '🇩🇪',
+        'Italia': '🇮🇹',
         'Australia': '🇦🇺',
         'India': '🇮🇳',
+        'Japão': '🇯🇵',
+        'China': '🇨🇳',
+        'Russia': '🇷🇺',
+        'Canada': '🇨🇦',
+        'Chile': '🇨🇱',
+        'Peru': '🇵🇪',
+        'Colombia': '🇨🇴',
         'Global': '🌍',
         'Oriente Medio': '🕌',
         'Europa': '🇪🇺',
@@ -734,23 +1052,23 @@ def ping():
 
 @app.route('/')
 def home():
-    # Registra a visita (agora funcionando no Render)
     contador_visitas.registrar_visita()
     total_visitas = contador_visitas.get_total()
     
     noticias = radar._carregar_noticias()
     
+    # Separação por categoria
+    antifa = [n for n in noticias if n.categoria == 'antifa']
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
-    antifa = [n for n in noticias if n.categoria in ['antifa', 'anarquista', 'comunista']]
-    nacionais = [n for n in noticias if n.pais == 'Brasil']
-    internacionais = [n for n in noticias if n.pais != 'Brasil']
+    nacionais = [n for n in noticias if n.categoria == 'nacional']
+    internacionais = [n for n in noticias if n.categoria == 'internacional']
     destaques = [n for n in noticias if n.destaque][:5]
     
     destaques_html = ''
     for n in destaques:
         bandeira = get_bandeira(n.pais)
         destaques_html += f'''
-        <div class="destaque-card" data-categoria="{n.categoria}" data-pais="{n.pais}">
+        <div class="destaque-card" data-categoria="{n.categoria}">
             <span class="destaque-tag">⭐ DESTAQUE</span>
             <div class="destaque-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
@@ -771,15 +1089,15 @@ def home():
         destaques_conteudo = f'''
         <div class="mensagem-vazia">
             <div class="loading-animation"></div>
-            <p>🔍 Radar em operacao... buscando informacoes em {len(FONTES_CONFIAVEIS)} fontes</p>
+            <p>🔍 Radar em operacao... buscando informacoes em 120 fontes</p>
         </div>
         '''
     
-    geo_html = ''
-    for n in geopolitica[:12]:
+    antifa_html = ''
+    for n in antifa[:12]:
         bandeira = get_bandeira(n.pais)
-        geo_html += f'''
-        <div class="noticia" data-categoria="geopolitica" data-pais="{n.pais}">
+        antifa_html += f'''
+        <div class="noticia antifa" data-categoria="antifa">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">[{n.pais}]</span>
@@ -794,11 +1112,11 @@ def home():
         </div>
         '''
     
-    antifa_html = ''
-    for n in antifa[:12]:
+    geo_html = ''
+    for n in geopolitica[:12]:
         bandeira = get_bandeira(n.pais)
-        antifa_html += f'''
-        <div class="noticia antifa" data-categoria="antifa" data-pais="{n.pais}">
+        geo_html += f'''
+        <div class="noticia" data-categoria="geopolitica">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">[{n.pais}]</span>
@@ -817,7 +1135,7 @@ def home():
     for n in nacionais[:12]:
         bandeira = get_bandeira(n.pais)
         nacional_html += f'''
-        <div class="noticia nacional" data-categoria="{n.categoria}" data-pais="Brasil">
+        <div class="noticia nacional" data-categoria="nacional">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">NACIONAL</span>
@@ -836,7 +1154,7 @@ def home():
     for n in internacionais[:12]:
         bandeira = get_bandeira(n.pais)
         internacional_html += f'''
-        <div class="noticia internacional" data-categoria="{n.categoria}" data-pais="{n.pais}">
+        <div class="noticia internacional" data-categoria="internacional">
             <div class="noticia-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="pais">[{n.pais}]</span>
@@ -1520,8 +1838,8 @@ def home():
             <div class="filtros-container" id="filtros">
                 <button class="filtro-btn ativo" data-filtro="todos" onclick="filtrarNoticias('todos')">📰 TODAS <span class="contador">{len(noticias)}</span></button>
                 <button class="filtro-btn" data-filtro="destaques" onclick="filtrarNoticias('destaques')">⭐ DESTAQUES <span class="contador">{len(destaques)}</span></button>
-                <button class="filtro-btn" data-filtro="geopolitica" onclick="filtrarNoticias('geopolitica')">⚔️ GEOPOLÍTICA <span class="contador">{len(geopolitica)}</span></button>
                 <button class="filtro-btn" data-filtro="antifa" onclick="filtrarNoticias('antifa')">🏴 ANTIFA <span class="contador">{len(antifa)}</span></button>
+                <button class="filtro-btn" data-filtro="geopolitica" onclick="filtrarNoticias('geopolitica')">⚔️ GEOPOLÍTICA <span class="contador">{len(geopolitica)}</span></button>
                 <button class="filtro-btn" data-filtro="nacional" onclick="filtrarNoticias('nacional')">📰 NACIONAL <span class="contador">{len(nacionais)}</span></button>
                 <button class="filtro-btn" data-filtro="internacional" onclick="filtrarNoticias('internacional')">🌎 INTERNACIONAL <span class="contador">{len(internacionais)}</span></button>
             </div>
@@ -1535,21 +1853,21 @@ def home():
         </div>
         
         <div class="grid-principal" id="grid-noticias">
-            <div class="coluna" id="coluna-geopolitica" data-categoria="geopolitica">
-                <h2>⚔️ Geopolítica <span class="badge" id="contador-geopolitica">{len(geopolitica)}</span></h2>
-                <div id="noticias-geopolitica">{geo_html if geo_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando conflitos...</p></div>'}</div>
-            </div>
             <div class="coluna" id="coluna-antifa" data-categoria="antifa">
-                <h2>🏴 Antifa <span class="badge" id="contador-antifa">{len(antifa)}</span></h2>
-                <div id="noticias-antifa">{antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando movimentos...</p></div>'}</div>
+                <h2>🏴 ANTIFA <span class="badge" id="contador-antifa">{len(antifa)}</span></h2>
+                <div id="noticias-antifa">{antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando movimentos de resistência...</p></div>'}</div>
+            </div>
+            <div class="coluna" id="coluna-geopolitica" data-categoria="geopolitica">
+                <h2>⚔️ GEOPOLÍTICA <span class="badge" id="contador-geopolitica">{len(geopolitica)}</span></h2>
+                <div id="noticias-geopolitica">{geo_html if geo_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando conflitos e análises...</p></div>'}</div>
             </div>
             <div class="coluna" id="coluna-nacional" data-categoria="nacional">
                 <h2>📰 NACIONAL <span class="badge" id="contador-nacional">{len(nacionais)}</span></h2>
-                <div id="noticias-nacional">{nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias nacionais...</p></div>'}</div>
+                <div id="noticias-nacional">{nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias do Brasil...</p></div>'}</div>
             </div>
             <div class="coluna" id="coluna-internacional" data-categoria="internacional">
-                <h2>🌎 Internacional <span class="badge" id="contador-internacional">{len(internacionais)}</span></h2>
-                <div id="noticias-internacional">{internacional_html if internacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias internacionais...</p></div>'}</div>
+                <h2>🌎 INTERNACIONAL <span class="badge" id="contador-internacional">{len(internacionais)}</span></h2>
+                <div id="noticias-internacional">{internacional_html if internacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias do mundo...</p></div>'}</div>
             </div>
         </div>
         
@@ -1558,11 +1876,17 @@ def home():
             <div class="footer-stats">
                 <span>🇧🇷 Horário Brasília</span>
                 <span>📰 {len(noticias)} notícias</span>
-                <span>Visitas {total_visitas}</span>
+                <span>👥 {total_visitas} visitas</span>
             </div>
-            <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação Antifascista</div>
-            <div class="footer-copyright" style="color: #555;">Links originais preservados</div>
-            <div class="footer-versao">v27.1 • 44 Fontes + Análise Global</div>
+            <div class="footer-stats">
+                <span>🏴 {len(antifa)}</span>
+                <span>⚔️ {len(geopolitica)}</span>
+                <span>🇧🇷 {len(nacionais)}</span>
+                <span>🌎 {len(internacionais)}</span>
+            </div>
+            <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação com propósito</div>
+            <div class="footer-copyright" style="color: #555;">120 fontes • Atualizado a cada 10 minutos • Notícias duram até 3 dias</div>
+            <div class="footer-versao">v29.0 • 120+ Fontes • Classificador Automático • Expurgo 3 dias</div>
         </div>
 
         <script>
@@ -1586,12 +1910,12 @@ def home():
                     colunas.forEach(col => col.style.display = 'none');
                     destaques.style.display = 'block';
                     break;
-                case 'geopolitica':
-                    colunas.forEach(col => col.style.display = col.dataset.categoria === 'geopolitica' ? 'block' : 'none');
-                    destaques.style.display = 'none';
-                    break;
                 case 'antifa':
                     colunas.forEach(col => col.style.display = col.dataset.categoria === 'antifa' ? 'block' : 'none');
+                    destaques.style.display = 'none';
+                    break;
+                case 'geopolitica':
+                    colunas.forEach(col => col.style.display = col.dataset.categoria === 'geopolitica' ? 'block' : 'none');
                     destaques.style.display = 'none';
                     break;
                 case 'nacional':
@@ -1622,6 +1946,11 @@ def stats_page():
     noticias = radar._carregar_noticias()
     total_visitas = contador_visitas.get_total()
     
+    antifa = [n for n in noticias if n.categoria == 'antifa']
+    geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
+    nacionais = [n for n in noticias if n.categoria == 'nacional']
+    internacionais = [n for n in noticias if n.categoria == 'internacional']
+    
     fontes_count = {}
     for n in noticias:
         fontes_count[n.fonte] = fontes_count.get(n.fonte, 0) + 1
@@ -1643,6 +1972,7 @@ def stats_page():
             .container {{ max-width: 800px; margin: 0 auto; }}
             .stat-box {{ background: #111; border-left: 4px solid red; padding: 20px; margin: 20px 0; border-radius: 10px; }}
             .numero-grande {{ font-size: 2.5rem; color: red; font-weight: bold; }}
+            .categoria-row {{ display: flex; justify-content: space-between; margin: 10px 0; padding: 10px; background: #1a1a1a; border-radius: 5px; }}
             ul {{ list-style: none; padding: 0; }}
             li {{ background: #1a1a1a; margin: 5px 0; padding: 8px 15px; border-radius: 5px; }}
             a {{ color: red; text-decoration: none; }}
@@ -1654,10 +1984,24 @@ def stats_page():
             <div class="stat-box">
                 <p><strong>Total de visitas:</strong> <span class="numero-grande">{total_visitas}</span></p>
                 <p><strong>Total de notícias:</strong> {len(noticias)}</p>
-                <p><strong>Fontes ativas:</strong> {radar.estatisticas['fontes_funcionando']} de 44</p>
-                <p><strong>Continentes:</strong> {', '.join(radar.estatisticas['continentes'])}</p>
+                <p><strong>Fontes ativas:</strong> {radar.estatisticas['fontes_funcionando']} de 120</p>
                 <p><strong>Horário:</strong> {horario_brasilia()}</p>
             </div>
+            
+            <h2>Distribuição por categoria:</h2>
+            <div class="categoria-row">
+                <span>🏴 ANTIFA</span> <strong>{len(antifa)} notícias</strong>
+            </div>
+            <div class="categoria-row">
+                <span>⚔️ GEOPOLÍTICA</span> <strong>{len(geopolitica)} notícias</strong>
+            </div>
+            <div class="categoria-row">
+                <span>🇧🇷 NACIONAL</span> <strong>{len(nacionais)} notícias</strong>
+            </div>
+            <div class="categoria-row">
+                <span>🌎 INTERNACIONAL</span> <strong>{len(internacionais)} notícias</strong>
+            </div>
+            
             <h2>Notícias por fonte:</h2>
             <ul>{html_fontes}</ul>
             <p style="margin-top: 30px;"><a href="/">← Voltar</a></p>
@@ -1675,16 +2019,16 @@ def api_stats():
     noticias = radar._carregar_noticias()
     total_visitas = contador_visitas.get_total()
     
+    antifa = [n for n in noticias if n.categoria == 'antifa']
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
-    antifa = [n for n in noticias if n.categoria in ['antifa', 'anarquista', 'comunista']]
-    nacionais = [n for n in noticias if n.pais == 'Brasil']
-    internacionais = [n for n in noticias if n.pais != 'Brasil']
+    nacionais = [n for n in noticias if n.categoria == 'nacional']
+    internacionais = [n for n in noticias if n.categoria == 'internacional']
     
     return jsonify({
         'total_visitas': total_visitas,
         'total_noticias': len(noticias),
-        'geopolitica': len(geopolitica),
         'antifa': len(antifa),
+        'geopolitica': len(geopolitica),
         'nacional': len(nacionais),
         'internacional': len(internacionais),
         'paises': len(radar.estatisticas['paises']),
@@ -1700,28 +2044,38 @@ def api_stats():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v27.1 - INFINITY")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.0 - INFINITY")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
     total_visitas = contador_visitas.get_total()
     
+    antifa = [n for n in noticias if n.categoria == 'antifa']
+    geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
+    nacionais = [n for n in noticias if n.categoria == 'nacional']
+    internacionais = [n for n in noticias if n.categoria == 'internacional']
+    
     logger.info(f"Acervo inicial: {len(noticias)} noticias")
-    logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)} (44 fontes)")
-    logger.info(f"Filtro anti-casino ativo: {len(PALAVRAS_PROIBIDAS)} palavras bloqueadas")
+    logger.info(f"  ANTIFA: {len(antifa)}")
+    logger.info(f"  GEOPOLÍTICA: {len(geopolitica)}")
+    logger.info(f"  NACIONAL: {len(nacionais)}")
+    logger.info(f"  INTERNACIONAL: {len(internacionais)}")
+    logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)} (120 fontes)")
     logger.info(f"Contador de visitas: iniciando em {total_visitas}")
     
     radar.iniciar_radar_automatico()
-    logger.info("Radar automatico ativado - Busca global")
+    logger.info("Radar automatico ativado - Rodízio de 40 fontes por ciclo")
     
     anti_sono = SistemaAntiSono()
     anti_sono.iniciar()
-    logger.info("✅ Sistema Anti-Sono ativado - Site acordado 24/7")
+    logger.info("✅ Sistema Anti-Sono ativado")
     logger.info("✅ Tradutor ativo - Notícias em Português")
-    logger.info("✅ Contador de visitas discreto - 'Visitas X'")
-    logger.info("✅ 44 fontes de notícias + Glint Trade anonimizado")
-    logger.info("✅ Democracy Now removido conforme solicitado")
-    logger.info("✅ CORRIGIDO: IP real capturado no Render (não exibido)")
+    logger.info("✅ 120+ fontes organizadas por categoria")
+    logger.info("✅ Classificador automático de notícias")
+    logger.info("✅ Detector de duplicatas por similaridade")
+    logger.info("✅ Expurgo automático após 3 dias")
+    logger.info("✅ Sistema de prioridade (notícias importantes duram mais)")
+    logger.info("✅ Rodízio de fontes para não sobrecarregar")
     logger.info("="*70)
 
 inicializar()
