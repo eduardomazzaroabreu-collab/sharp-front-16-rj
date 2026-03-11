@@ -524,7 +524,7 @@ FONTES_CONFIAVEIS = [
     {'nome': 'MERIP', 'pais': 'USA', 'url': 'https://merip.org/feed/', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
     {'nome': 'Jadaliyya', 'pais': 'USA', 'url': 'https://www.jadaliyya.com/feed', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
     {'nome': 'Al-Shabaka', 'pais': 'Palestina', 'url': 'https://al-shabaka.org/feed/', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
-    {'nome': 'B'Tselem', 'pais': 'Israel', 'url': 'https://www.btselem.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},
+    {'nome': 'B\'Tselem', 'pais': 'Israel', 'url': 'https://www.btselem.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Oriente Medio', 'prioridade': 'alta'},  # ← CORRIGIDO!
     {'nome': 'IRIN News', 'pais': 'Global', 'url': 'https://www.irinnews.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'media'},
     {'nome': 'The New Humanitarian', 'pais': 'Global', 'url': 'https://www.thenewhumanitarian.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'media'},
     {'nome': 'Refworld', 'pais': 'Global', 'url': 'https://www.refworld.org/feed', 'categoria_base': 'geopolitica', 'continente': 'Global', 'prioridade': 'baixa'},
