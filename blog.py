@@ -3,8 +3,9 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.2 - INFINITY                 ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.3 - INFINITY                 ║
 ║         RADAR AUTOMATICO COM 120+ FONTES + FONTES EXTERNAS                  ║
+║         CORREÇÃO: LOOP DE ATUALIZAÇÃO ROBUSTO PARA RENDER                    ║
 ║         "Informação com propósito - Sempre atualizado"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -31,13 +32,27 @@ from dataclasses import dataclass, field, asdict
 import queue
 from urllib.parse import urlparse, quote_plus
 import html
-import warnings
+import sys
+import signal
 warnings.filterwarnings('ignore')
 
 # ============================================
 # CRIAÇÃO DO APP FLASK
 # ============================================
 app = Flask(__name__)
+
+# ============================================
+# CONFIGURAÇÃO DE LOG MAIS DETALHADA
+# ============================================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - [%(levelname)s] - %(message)s',
+    handlers=[
+        logging.FileHandler('radar_antifa.log'),
+        logging.StreamHandler(sys.stdout)  # Força saída para stdout (visível no Render)
+    ]
+)
+logger = logging.getLogger('ANTIFA-RADAR')
 
 # ============================================
 # CONTADOR DE VISITANTES (COMEÇA EM 194)
@@ -145,11 +160,11 @@ class Config:
     TEMPO_ATUALIZACAO = 10  # minutos
     TIMEOUT_REQUISICAO = 8
     TIMEOUT_TOTAL = 30
-    DELAY_ENTRE_REQUISICOES = 2  # Reduzido para 2 segundos
-    DELAY_INICIAL = 2
+    DELAY_ENTRE_REQUISICOES = 2
+    DELAY_INICIAL = 5  # Aumentado para 5 segundos
     
     MAX_NOTICIAS_POR_FONTE = 5
-    MAX_NOTICIAS_POR_FONTE_EXTERNA = 8  # Pega mais do site externo
+    MAX_NOTICIAS_POR_FONTE_EXTERNA = 8
     MAX_NOTICIAS_TOTAL = 8000
     MAX_TRABALHADORES = 15
     MAX_TENTATIVAS = 2
@@ -183,20 +198,6 @@ def hora_brasilia():
     utc = datetime.utcnow()
     brasilia = utc - timedelta(hours=3)
     return brasilia.strftime('%H:%M')
-
-# ============================================
-# LOGGING
-# ============================================
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - [%(levelname)s] - %(message)s',
-    handlers=[
-        logging.FileHandler(config.ARQUIVO_LOG),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger('ANTIFA-RADAR')
 
 # ============================================
 # PALAVRAS PROIBIDAS (FILTRO)
@@ -256,7 +257,7 @@ class ProxyManager:
 proxy_manager = ProxyManager()
 
 # ============================================
-# SISTEMA ANTI-SONO
+# SISTEMA ANTI-SONO MELHORADO
 # ============================================
 
 class SistemaAntiSono:
@@ -264,23 +265,33 @@ class SistemaAntiSono:
         self.ativo = True
         self.url_do_site = "https://sharp-front-16-rj.onrender.com"
         self.contador_pings = 0
+        self.session = requests.Session()
         
     def iniciar(self):
-        thread = threading.Thread(target=self._loop_ping)
-        thread.daemon = True
+        thread = threading.Thread(target=self._loop_ping, daemon=True)
         thread.start()
-        logger.info("[Anti-Sono] Sistema ativado")
+        logger.info("[Anti-Sono] Sistema ativado - Ping a cada 4 minutos")
     
     def _loop_ping(self):
         while self.ativo:
             try:
-                requests.get(self.url_do_site, timeout=10)
+                # Ping na página principal
+                resp1 = self.session.get(self.url_do_site, timeout=10)
+                # Ping na API de stats
+                resp2 = self.session.get(f"{self.url_do_site}/api/stats", timeout=5)
+                
                 self.contador_pings += 1
-                logger.info(f"[Anti-Sono] Ping #{self.contador_pings}")
-                requests.get(f"{self.url_do_site}/api/stats", timeout=5)
-            except:
-                pass
-            time.sleep(300)
+                logger.info(f"[Anti-Sono] Ping #{self.contador_pings} - Status: {resp1.status_code}/{resp2.status_code}")
+                
+                # Aguarda 4 minutos (240 segundos) em vez de 5
+                for _ in range(240):
+                    if not self.ativo:
+                        break
+                    time.sleep(1)
+                    
+            except Exception as e:
+                logger.error(f"[Anti-Sono] Erro no ping: {e}")
+                time.sleep(60)  # Se der erro, tenta de novo em 1 minuto
 
 # ============================================
 # CLASSIFICADOR AUTOMÁTICO DE NOTÍCIAS
@@ -337,6 +348,9 @@ class DetectorDuplicatas:
     
     @staticmethod
     def sao_similares(titulo1, titulo2):
+        if not titulo1 or not titulo2:
+            return False
+            
         t1 = re.sub(r'[^\w\s]', '', titulo1.lower()).strip()
         t2 = re.sub(r'[^\w\s]', '', titulo2.lower()).strip()
         
@@ -371,7 +385,7 @@ class SistemaPrioridade:
     FONTES_PRIORITARIAS = [
         'Brasil de Fato', 'MST', 'Al Jazeera', 'The Intercept',
         'Democracy Now', 'TeleSUR', 'Jacobin', 'Carta Capital',
-        'Análise Global', 'Informe Internacional'  # Nomes fictícios para fontes externas
+        'Análise Global', 'Informe Internacional'
     ]
     
     @classmethod
@@ -528,9 +542,6 @@ FONTES_CONFIAVEIS = [
 # ============================================
 # SCRAPER DO GLINT.TRADE (ANONIMIZADO) - MANTIDO!
 # ============================================
-# IMPORTANTE: Este scraper busca notícias do Glint Trade
-# mas apresenta com nome genérico no site
-# ============================================
 
 class GlintTradeScraper:
     """
@@ -540,27 +551,27 @@ class GlintTradeScraper:
     
     def __init__(self):
         self.url_base = "https://glint.trade"
-        self.nome_apresentacao = "Análise Global"  # Nome que aparece no site
+        self.nome_apresentacao = "Análise Global"
         self.pais_ficticio = "Global"
         self.continente_ficticio = "Global"
         self.ultima_busca = None
+        self.session = requests.Session()
         
     def buscar_noticias(self):
         """
-        Extrai notícias/títulos do site e retorna como objetos Noticia
+        Extrai notícias/títulos do site e retorna como dicionários
         """
         try:
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
                 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
-                'Referer': 'https://google.com',  # Disfarça origem
+                'Referer': 'https://google.com',
             }
             
-            # Usa proxy se disponível
             proxy = proxy_manager.obter_proxy()
             
-            response = requests.get(
+            response = self.session.get(
                 self.url_base, 
                 headers=headers, 
                 proxies=proxy,
@@ -574,7 +585,7 @@ class GlintTradeScraper:
             soup = BeautifulSoup(response.text, 'html.parser')
             noticias_encontradas = []
             
-            # ===== ESTRATÉGIA 1: Procura por artigos/postagens =====
+            # Estratégia 1: Procura por artigos
             artigos = soup.find_all(['article', 'div'], 
                                    class_=re.compile(r'post|entry|article|news|item|card', re.I))
             
@@ -583,22 +594,18 @@ class GlintTradeScraper:
                 link = None
                 resumo = None
                 
-                # Tenta encontrar título
-                titulo_tag = artigo.find(['h1', 'h2', 'h3', 'h4', 'h5', 'strong', 'a'])
+                titulo_tag = artigo.find(['h1', 'h2', 'h3', 'h4', 'h5'])
                 if titulo_tag:
                     titulo = titulo_tag.get_text().strip()
                 
-                # Tenta encontrar link
                 link_tag = artigo.find('a', href=True)
                 if link_tag:
                     link = link_tag['href']
-                    # Constrói URL absoluta
                     if link.startswith('/'):
                         link = self.url_base + link
                     elif not link.startswith('http'):
                         link = self.url_base + '/' + link
                 
-                # Tenta encontrar resumo
                 resumo_tag = artigo.find(['p', 'div'], 
                                         class_=re.compile(r'summary|excerpt|description|text', re.I))
                 if resumo_tag:
@@ -611,7 +618,7 @@ class GlintTradeScraper:
                         'resumo': resumo if resumo else titulo
                     })
             
-            # ===== ESTRATÉGIA 2: Se não achou artigos, procura headings com links =====
+            # Estratégia 2: Headings com links
             if len(noticias_encontradas) < 3:
                 for heading in soup.find_all(['h1', 'h2', 'h3', 'h4']):
                     texto = heading.get_text().strip()
@@ -630,25 +637,6 @@ class GlintTradeScraper:
                             'resumo': texto
                         })
             
-            # ===== ESTRATÉGIA 3: Links com texto longo =====
-            if len(noticias_encontradas) < 3:
-                for link in soup.find_all('a', href=True):
-                    texto = link.get_text().strip()
-                    href = link['href']
-                    
-                    if texto and len(texto) > 20 and len(texto) < 100:
-                        if any(p in href.lower() for p in ['/news/', '/article/', '/post/', '/blog/']):
-                            if href.startswith('/'):
-                                href = self.url_base + href
-                            elif not href.startswith('http'):
-                                href = self.url_base + '/' + href
-                            
-                            noticias_encontradas.append({
-                                'titulo': texto,
-                                'link': href,
-                                'resumo': texto
-                            })
-            
             logger.info(f"[Glint] Encontradas {len(noticias_encontradas)} notícias potenciais")
             return noticias_encontradas[:config.MAX_NOTICIAS_POR_FONTE_EXTERNA]
             
@@ -658,25 +646,21 @@ class GlintTradeScraper:
     
     def criar_noticias(self, links_antigos):
         """
-        Cria objetos Noticia a partir das notícias encontradas,
-        verificando duplicatas
+        Cria objetos Noticia a partir das notícias encontradas
         """
         noticias_glint = self.buscar_noticias()
         noticias_criadas = []
         
         for item in noticias_glint:
             try:
-                # Verifica se já existe pelo link
                 if item['link'] in links_antigos:
                     continue
                 
-                # Verifica duplicata por similaridade (será feita depois também)
                 titulo = item['titulo']
                 titulo_traduzido = tradutor.traduzir(titulo)
                 resumo = item['resumo']
                 resumo_traduzido = tradutor.traduzir(resumo) if resumo else ""
                 
-                # Classifica automaticamente
                 categoria = classificador.classificar(
                     titulo, 
                     resumo, 
@@ -684,13 +668,11 @@ class GlintTradeScraper:
                     self.nome_apresentacao
                 )
                 
-                # Calcula prioridade
                 dias_expirar = prioridade.calcular_prioridade(titulo, self.nome_apresentacao)
                 
-                # Cria objeto Noticia com nome genérico
                 noticia = Noticia(
                     id=hashlib.md5(item['link'].encode()).hexdigest()[:8],
-                    fonte=self.nome_apresentacao,  # ← Nome genérico! Não aparece "Glint"
+                    fonte=self.nome_apresentacao,
                     pais=self.pais_ficticio,
                     continente=self.continente_ficticio,
                     categoria=categoria,
@@ -698,7 +680,7 @@ class GlintTradeScraper:
                     titulo_original=titulo,
                     resumo=resumo_traduzido[:200] + "..." if len(resumo_traduzido) > 200 else resumo_traduzido,
                     resumo_original=resumo[:200],
-                    link=item['link'],  # Link direto, sem proxy
+                    link=item['link'],
                     data=datetime.now().strftime('%Y-%m-%d %H:%M'),
                     publicada_em=horario_brasilia(),
                     data_coleta=datetime.now().strftime('%Y-%m-%d'),
@@ -706,18 +688,20 @@ class GlintTradeScraper:
                 )
                 
                 noticias_criadas.append(noticia)
-                logger.info(f"  [Glint] +1 notícia ({categoria})")
                 
             except Exception as e:
                 logger.debug(f"[Glint] Erro ao criar notícia: {e}")
                 continue
+        
+        if noticias_criadas:
+            logger.info(f"  [Glint] +{len(noticias_criadas)} notícias")
         
         return noticias_criadas
 
 glint_scraper = GlintTradeScraper()
 
 # ============================================
-# NOVO: SISTEMA DE DESTAQUES ROTATIVOS (6 HORAS)
+# SISTEMA DE DESTAQUES ROTATIVOS (6 HORAS)
 # ============================================
 
 class SistemaDestaques:
@@ -788,7 +772,7 @@ class SistemaDestaques:
 sistema_destaques = SistemaDestaques()
 
 # ============================================
-# SISTEMA DE RADAR (COM GLINT MANTIDO)
+# SISTEMA DE RADAR CORRIGIDO (COM LOOP ROBUSTO)
 # ============================================
 
 @dataclass
@@ -821,34 +805,58 @@ class RadarAutomatico:
             'geopolitica': 0,
             'nacional': 0,
             'internacional': 0,
-            'fontes_externas': 0,  # Nova estatística
+            'fontes_externas': 0,
+            'total_varreduras': 0,
         }
         self.radar_ativo = False
         self.ultimas_fontes = []
+        self.session = requests.Session()
         
     def iniciar_radar_automatico(self):
         if self.radar_ativo:
             return
         self.radar_ativo = True
-        thread = threading.Thread(target=self._loop_radar)
-        thread.daemon = True
+        thread = threading.Thread(target=self._loop_radar, daemon=True)
         thread.start()
         logger.info("[Radar] Radar automatico iniciado - 120 fontes + fontes externas")
     
     def _loop_radar(self):
+        """Loop principal do radar com tratamento de erros robusto"""
+        logger.info("[Radar] Aguardando delay inicial de %s segundos...", config.DELAY_INICIAL)
         time.sleep(config.DELAY_INICIAL)
+        
         while self.radar_ativo:
             try:
+                inicio_ciclo = time.time()
+                self.estatisticas['total_varreduras'] += 1
+                logger.info(f"--- Iniciando ciclo de varredura #{self.estatisticas['total_varreduras']} ---")
+                
                 self._executar_varredura()
-                time.sleep(config.TEMPO_ATUALIZACAO * 60)
+                
+                duracao_ciclo = time.time() - inicio_ciclo
+                tempo_espera = max(60, (config.TEMPO_ATUALIZACAO * 60) - duracao_ciclo)
+                
+                logger.info(f"Ciclo #{self.estatisticas['total_varreduras']} concluído em {duracao_ciclo:.2f}s. "
+                          f"Próximo ciclo em {tempo_espera/60:.1f} minutos.")
+                
+                # Espera em intervalos de 5 segundos para poder interromper se necessário
+                espera_restante = tempo_espera
+                while espera_restante > 0 and self.radar_ativo:
+                    time.sleep(min(5, espera_restante))
+                    espera_restante -= 5
+                    
             except Exception as e:
-                logger.error(f"[Erro] no radar: {e}")
+                logger.error(f"[ERRO CRÍTICO] no loop do radar: {e}", exc_info=True)
+                logger.info("Aguardando 60 segundos antes de tentar novamente...")
                 time.sleep(60)
     
     def _executar_varredura(self):
         logger.info(f"\n{'='*60}")
         logger.info(f"[Radar] [{horario_brasilia()}] Iniciando varredura")
         logger.info(f"{'='*60}")
+        
+        # Reseta contadores para esta varredura
+        self.estatisticas['fontes_externas'] = 0
         
         noticias_antigas = self._carregar_noticias()
         noticias_antigas = self._expurgar_noticias_antigas(noticias_antigas)
@@ -862,7 +870,12 @@ class RadarAutomatico:
         for fonte in fontes_para_varrer:
             time.sleep(config.DELAY_ENTRE_REQUISICOES)
             try:
-                response = requests.get(fonte['url'], headers=config.HEADERS, timeout=config.TIMEOUT_REQUISICAO)
+                response = self.session.get(
+                    fonte['url'], 
+                    headers=config.HEADERS, 
+                    timeout=config.TIMEOUT_REQUISICAO
+                )
+                
                 if response.status_code == 200:
                     feed = feedparser.parse(response.content)
                     if len(feed.entries) > 0:
@@ -900,23 +913,20 @@ class RadarAutomatico:
                             self.estatisticas['paises'].add(fonte['pais'])
                             logger.info(f"  [OK] {fonte['categoria_base'].upper()}: {fonte['nome']} - {len(noticias_fonte)} noticias")
             except Exception as e:
-                logger.debug(f"  [Falha] {fonte['nome']}")
+                logger.debug(f"  [Falha] {fonte['nome']}: {str(e)[:50]}")
         
-        # ===== 2. VARRER GLINT TRADE (MANTIDO!) =====
+        # ===== 2. VARRER GLINT TRADE =====
         try:
             noticias_glint = glint_scraper.criar_noticias(links_antigos)
             
-            # Verifica duplicatas com as notícias já coletadas
             for noticia_glint in noticias_glint:
                 duplicata = False
                 
-                # Verifica com as notícias antigas
                 for noticia_existente in noticias_antigas:
                     if detector.sao_similares(noticia_glint.titulo_original, noticia_existente.titulo_original):
                         duplicata = True
                         break
                 
-                # Verifica com as novas notícias já adicionadas nesta varredura
                 if not duplicata:
                     for noticia_nova in todas_noticias_novas:
                         if detector.sao_similares(noticia_glint.titulo_original, noticia_nova.titulo_original):
@@ -928,7 +938,7 @@ class RadarAutomatico:
                     self.estatisticas['fontes_externas'] += 1
             
             if noticias_glint:
-                logger.info(f"  [OK] Fonte externa: +{len(noticias_glint)} notícias (após filtro de duplicatas)")
+                logger.info(f"  [OK] Fonte externa: +{len(noticias_glint)} notícias")
                 
         except Exception as e:
             logger.debug(f"  [Falha] Fonte externa: {e}")
@@ -958,8 +968,10 @@ class RadarAutomatico:
             logger.info(f"  GEOPOLÍTICA: {len(geo)}")
             logger.info(f"  NACIONAL: {len(nac)}")
             logger.info(f"  INTERNACIONAL: {len(inter)}")
-            logger.info(f"  Fontes externas nesta varredura: {self.estatisticas['fontes_externas']}")
-            logger.info(f"  TOTAL: {len(todas_noticias)}")
+            logger.info(f"  Novas nesta varredura: {len(todas_noticias_novas)}")
+            logger.info(f"  TOTAL ACUMULADO: {len(todas_noticias)}")
+        else:
+            logger.info("[Radar] Nenhuma notícia nova encontrada nesta varredura")
     
     def _selecionar_fontes_rodizio(self):
         total_fontes = len(FONTES_CONFIAVEIS)
@@ -1072,6 +1084,7 @@ class RadarAutomatico:
                             noticias.append(Noticia(**n))
                         except:
                             pass
+                    logger.info(f"[Radar] Carregadas {len(noticias)} notícias do arquivo")
                     return noticias
             except:
                 return []
@@ -1085,8 +1098,9 @@ class RadarAutomatico:
                     'noticias': noticias_dict,
                     'ultima_atualizacao': horario_brasilia(),
                     'total': len(noticias_dict),
-                    'fontes_externas': self.estatisticas['fontes_externas']
+                    'total_varreduras': self.estatisticas['total_varreduras']
                 }, f, ensure_ascii=False, indent=2, default=str)
+            logger.info(f"[Radar] Salvadas {len(noticias)} notícias no arquivo")
             return True
         except Exception as e:
             logger.error(f"[Erro] ao salvar: {e}")
@@ -1145,8 +1159,27 @@ def ping():
     return jsonify({
         'status': 'ok',
         'horario': horario_brasilia(),
-        'mensagem': 'Sistema anti-sono ativo'
+        'mensagem': 'Sistema anti-sono ativo',
+        'total_varreduras': radar.estatisticas['total_varreduras']
     })
+
+@app.route('/forcar-atualizacao')
+def forcar_atualizacao():
+    """Endpoint para forçar atualização manual (útil para testes)"""
+    try:
+        thread = threading.Thread(target=radar._executar_varredura)
+        thread.daemon = True
+        thread.start()
+        return jsonify({
+            'status': 'ok',
+            'mensagem': 'Atualização forçada iniciada',
+            'horario': horario_brasilia()
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'erro',
+            'erro': str(e)
+        }), 500
 
 # ============================================
 # PAGINA PRINCIPAL
@@ -2011,7 +2044,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação com propósito</div>
             <div class="footer-copyright" style="color: #555;">120+ fontes • Atualizado a cada 10 minutos • Notícias duram até 3 dias • Destaques trocam a cada 6h</div>
-            <div class="footer-versao">v29.2 • 120+ Fontes + Fontes Externas • PWA Offline • Destaques 6h • Contador 194</div>
+            <div class="footer-versao">v29.3 • 120+ Fontes + Fontes Externas • PWA Offline • Loop Corrigido • Contador 194</div>
         </div>
 
         <script>
@@ -2121,7 +2154,7 @@ def manifest():
 @app.route('/service-worker.js')
 def service_worker():
     js = '''
-const CACHE_NAME = 'sharp-front-16-v2';
+const CACHE_NAME = 'sharp-front-16-v3';
 const urlsToCache = [
     '/',
     '/manifest.json',
@@ -2229,6 +2262,7 @@ def stats_page():
             <div class="stat-box">
                 <p><strong>Total de visitas:</strong> <span class="numero-grande">{total_visitas}</span></p>
                 <p><strong>Total de notícias:</strong> {len(noticias)}</p>
+                <p><strong>Total de varreduras realizadas:</strong> {radar.estatisticas['total_varreduras']}</p>
                 <p><strong>Fontes ativas (RSS):</strong> {radar.estatisticas['fontes_funcionando']} de 120</p>
                 <p><strong>Fontes externas nesta sessão:</strong> {radar.estatisticas['fontes_externas']}</p>
                 <p><strong>Horário:</strong> {horario_brasilia()}</p>
@@ -2282,9 +2316,10 @@ def api_stats():
         'continentes': len(radar.estatisticas['continentes']),
         'fontes_ativas': radar.estatisticas['fontes_funcionando'],
         'fontes_externas': radar.estatisticas['fontes_externas'],
+        'total_varreduras': radar.estatisticas['total_varreduras'],
         'ultima_atualizacao': horario_brasilia(),
         'hora_brasilia': hora_brasilia(),
-        'versao': '29.2',
+        'versao': '29.3',
         'destaques_rotacao_horas': config.DURACAO_DESTAQUE_HORAS
     })
 
@@ -2297,7 +2332,8 @@ def update_cache():
     noticias = radar._carregar_noticias()
     return jsonify({
         'ultima_atualizacao': horario_brasilia(),
-        'total_noticias': len(noticias)
+        'total_noticias': len(noticias),
+        'total_varreduras': radar.estatisticas['total_varreduras']
     })
 
 # ============================================
@@ -2306,9 +2342,10 @@ def update_cache():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.2 - +FONTES EXTERNAS")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.3 - LOOP CORRIGIDO")
     logger.info("="*70)
     
+    # Carrega notícias existentes
     noticias = radar._carregar_noticias()
     total_visitas = contador_visitas.get_total()
     
@@ -2326,16 +2363,20 @@ def inicializar():
     logger.info(f"Fontes externas: ATIVAS (Glint Trade anonimizado)")
     logger.info(f"Contador de visitas: iniciando em {total_visitas}")
     
+    # Carrega sistema de destaques
     sistema_destaques.carregar()
     if not sistema_destaques.destaques_atuais and noticias:
         logger.info("[Destaques] Inicializando primeira rotação")
         sistema_destaques.rotacionar(noticias)
     
+    # Inicia o radar
     radar.iniciar_radar_automatico()
     logger.info("Radar automatico ativado - 120 fontes + fontes externas")
     
+    # Inicia anti-sono
     anti_sono = SistemaAntiSono()
     anti_sono.iniciar()
+    
     logger.info("✅ Sistema Anti-Sono ativado")
     logger.info("✅ Tradutor ativo - Notícias em Português")
     logger.info("✅ 120+ fontes organizadas por categoria")
@@ -2348,10 +2389,21 @@ def inicializar():
     logger.info(f"✅ Destaques rotativos a cada {config.DURACAO_DESTAQUE_HORAS} horas")
     logger.info(f"✅ Contador iniciando em {total_visitas} (a partir de 194)")
     logger.info("✅ FONTE EXTERNA ATIVA: Glint Trade (anonimizado como 'Análise Global')")
+    logger.info("✅ LOOP DO RADAR CORRIGIDO - Atualizações a cada 10 minutos")
     logger.info("="*70)
 
+# Handler para desligamento gracioso
+def signal_handler(sig, frame):
+    logger.info("Recebido sinal de desligamento. Parando radar...")
+    radar.radar_ativo = False
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
+# Inicializa tudo
 inicializar()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
