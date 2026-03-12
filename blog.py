@@ -3,9 +3,9 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.4 - INFINITY                 ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.5 - INFINITY                 ║
 ║         RADAR AUTOMATICO COM 120+ FONTES + FONTES EXTERNAS                  ║
-║         CORREÇÃO: IMPORT WARNINGS ADICIONADO - DEPLOY FUNCIONAL              ║
+║         CORREÇÃO: LOOP ROBUSTO, PWA OFFLINE, DESTAQUES 6H                   ║
 ║         "Informação com propósito - Sempre atualizado"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -37,9 +37,7 @@ from urllib.parse import urlparse, quote_plus
 import html
 import sys
 import signal
-import warnings  # ← IMPORT CORRIGIDO! (Esse estava faltando)
-
-# Suprime warnings desnecessários
+import warnings  # ← ESSENCIAL! (estava faltando)
 warnings.filterwarnings('ignore')
 
 # ============================================
@@ -55,7 +53,7 @@ logging.basicConfig(
     format='%(asctime)s - [%(levelname)s] - %(message)s',
     handlers=[
         logging.FileHandler('radar_antifa.log'),
-        logging.StreamHandler(sys.stdout)
+        logging.StreamHandler(sys.stdout)  # Força saída para stdout
     ]
 )
 logger = logging.getLogger('ANTIFA-RADAR')
@@ -70,7 +68,7 @@ class ContadorVisitantes:
     def __init__(self, arquivo='contador_visitas.json'):
         self.arquivo = arquivo
         self.visitas_unicas = set()
-        self.total_visitas = 194
+        self.total_visitas = 194  # ← ALTERADO PARA 194
         self.carregar_dados()
     
     def carregar_dados(self):
@@ -175,7 +173,7 @@ class Config:
     MAX_TRABALHADORES = 15
     MAX_TENTATIVAS = 2
     
-    DURACAO_DESTAQUE_HORAS = 6
+    DURACAO_DESTAQUE_HORAS = 6  # ← NOVO: Destaques a cada 6 horas
     DIAS_MAXIMO_NOTICIA = 3
     
     FONTES_POR_VARREDURA = 40
@@ -543,13 +541,13 @@ FONTES_CONFIAVEIS = [
 ]
 
 # ============================================
-# SCRAPER DO GLINT.TRADE (ANONIMIZADO) - MANTIDO!
+# SCRAPER DO GLINT.TRADE (ANONIMIZADO) - MELHORADO!
 # ============================================
 
 class GlintTradeScraper:
     """
     Busca notícias do Glint Trade mas apresenta com nome genérico
-    para não expor a fonte original
+    Versão melhorada com extração mais precisa
     """
     
     def __init__(self):
@@ -562,7 +560,7 @@ class GlintTradeScraper:
         
     def buscar_noticias(self):
         """
-        Extrai notícias/títulos do site e retorna como dicionários
+        Extrai notícias/títulos do site com múltiplas estratégias
         """
         try:
             headers = {
@@ -587,6 +585,10 @@ class GlintTradeScraper:
             
             soup = BeautifulSoup(response.text, 'html.parser')
             noticias_encontradas = []
+            
+            # Remove elementos de navegação
+            for nav in soup.find_all(['nav', 'header', 'footer']):
+                nav.decompose()
             
             # Estratégia 1: Procura por artigos
             artigos = soup.find_all(['article', 'div'], 
@@ -615,11 +617,13 @@ class GlintTradeScraper:
                     resumo = resumo_tag.get_text().strip()
                 
                 if titulo and link and len(titulo) > 15:
-                    noticias_encontradas.append({
-                        'titulo': titulo,
-                        'link': link,
-                        'resumo': resumo if resumo else titulo
-                    })
+                    # Ignora links de navegação
+                    if not any(p in titulo.lower() for p in ['menu', 'login', 'sign', 'home', 'about']):
+                        noticias_encontradas.append({
+                            'titulo': titulo,
+                            'link': link,
+                            'resumo': resumo if resumo else titulo
+                        })
             
             # Estratégia 2: Headings com links
             if len(noticias_encontradas) < 3:
@@ -639,6 +643,25 @@ class GlintTradeScraper:
                             'link': href,
                             'resumo': texto
                         })
+            
+            # Estratégia 3: Links com texto longo
+            if len(noticias_encontradas) < 3:
+                for link in soup.find_all('a', href=True):
+                    texto = link.get_text().strip()
+                    href = link['href']
+                    
+                    if texto and len(texto) > 20 and len(texto) < 100:
+                        if any(p in href.lower() for p in ['/news/', '/article/', '/post/', '/blog/']):
+                            if href.startswith('/'):
+                                href = self.url_base + href
+                            elif not href.startswith('http'):
+                                href = self.url_base + '/' + href
+                            
+                            noticias_encontradas.append({
+                                'titulo': texto,
+                                'link': href,
+                                'resumo': texto
+                            })
             
             logger.info(f"[Glint] Encontradas {len(noticias_encontradas)} notícias potenciais")
             return noticias_encontradas[:config.MAX_NOTICIAS_POR_FONTE_EXTERNA]
@@ -825,7 +848,7 @@ class RadarAutomatico:
     
     def _loop_radar(self):
         """Loop principal do radar com tratamento de erros robusto"""
-        logger.info("[Radar] Aguardando delay inicial de %s segundos...", config.DELAY_INICIAL)
+        logger.info(f"[Radar] Aguardando delay inicial de {config.DELAY_INICIAL} segundos...")
         time.sleep(config.DELAY_INICIAL)
         
         while self.radar_ativo:
@@ -1319,6 +1342,9 @@ def home():
         <meta name="author" content="SHARP - FRONT 16 RJ">
         <title>SHARP - FRONT 16 RJ</title>
         
+        <!-- ============================================ -->
+        <!-- PWA / MODO OFFLINE - Service Worker -->
+        <!-- ============================================ -->
         <link rel="manifest" href="/manifest.json">
         <meta name="theme-color" content="#ff0000">
         <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1878,6 +1904,7 @@ def home():
                 margin-top: 10px;
             }}
             
+            /* BANNER DE MODO OFFLINE */
             .offline-banner {{
                 background: #ff0000;
                 color: #000;
@@ -1892,6 +1919,7 @@ def home():
                 display: block;
             }}
             
+            /* RESPONSIVIDADE */
             @media (max-width: 600px) {{
                 .titulo-container {{
                     gap: 3px;
@@ -2045,7 +2073,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação com propósito</div>
             <div class="footer-copyright" style="color: #555;">120+ fontes • Atualizado a cada 10 minutos • Notícias duram até 3 dias • Destaques trocam a cada 6h</div>
-            <div class="footer-versao">v29.4 • 120+ Fontes + Fontes Externas • PWA Offline • Loop Corrigido • Contador 194 • Import Warnings OK</div>
+            <div class="footer-versao">v29.5 • 120+ Fontes + Glint Trade • PWA Offline • Destaques 6h • Contador 194</div>
         </div>
 
         <script>
@@ -2093,6 +2121,9 @@ def home():
         }});
         </script>
         
+        <!-- ============================================ -->
+        <!-- SERVICE WORKER PARA MODO OFFLINE -->
+        <!-- ============================================ -->
         <script>
         if ('serviceWorker' in navigator) {{
             window.addEventListener('load', function() {{
@@ -2155,7 +2186,8 @@ def manifest():
 @app.route('/service-worker.js')
 def service_worker():
     js = '''
-const CACHE_NAME = 'sharp-front-16-v3';
+// Service Worker para SHARP - FRONT 16 RJ
+const CACHE_NAME = 'sharp-front-16-v5';
 const urlsToCache = [
     '/',
     '/manifest.json',
@@ -2320,7 +2352,7 @@ def api_stats():
         'total_varreduras': radar.estatisticas['total_varreduras'],
         'ultima_atualizacao': horario_brasilia(),
         'hora_brasilia': hora_brasilia(),
-        'versao': '29.4',
+        'versao': '29.5',
         'destaques_rotacao_horas': config.DURACAO_DESTAQUE_HORAS
     })
 
@@ -2343,7 +2375,7 @@ def update_cache():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.4 - DEPLOY FUNCIONAL")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.5 - PWA OFFLINE + GLINT")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
