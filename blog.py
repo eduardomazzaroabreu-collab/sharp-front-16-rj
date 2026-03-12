@@ -3,9 +3,9 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.5 - INFINITY                 ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.6 - INFINITY                 ║
 ║         RADAR AUTOMATICO COM 120+ FONTES + FONTES EXTERNAS                  ║
-║         CORREÇÃO: LOOP ROBUSTO, PWA OFFLINE, DESTAQUES 6H                   ║
+║         CORREÇÃO: DESTAQUES FUNCIONANDO DESDE A PRIMEIRA EXECUÇÃO           ║
 ║         "Informação com propósito - Sempre atualizado"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -37,7 +37,7 @@ from urllib.parse import urlparse, quote_plus
 import html
 import sys
 import signal
-import warnings  # ← ESSENCIAL! (estava faltando)
+import warnings
 warnings.filterwarnings('ignore')
 
 # ============================================
@@ -53,7 +53,7 @@ logging.basicConfig(
     format='%(asctime)s - [%(levelname)s] - %(message)s',
     handlers=[
         logging.FileHandler('radar_antifa.log'),
-        logging.StreamHandler(sys.stdout)  # Força saída para stdout
+        logging.StreamHandler(sys.stdout)
     ]
 )
 logger = logging.getLogger('ANTIFA-RADAR')
@@ -68,7 +68,7 @@ class ContadorVisitantes:
     def __init__(self, arquivo='contador_visitas.json'):
         self.arquivo = arquivo
         self.visitas_unicas = set()
-        self.total_visitas = 194  # ← ALTERADO PARA 194
+        self.total_visitas = 194
         self.carregar_dados()
     
     def carregar_dados(self):
@@ -160,6 +160,7 @@ class Config:
     ARQUIVO_CACHE = 'cache_fontes.json'
     ARQUIVO_HISTORICO = 'historico_buscas.json'
     ARQUIVO_LOG = 'radar_antifa.log'
+    ARQUIVO_DESTAQUES = 'destaques.json'
     
     TEMPO_ATUALIZACAO = 10  # minutos
     TIMEOUT_REQUISICAO = 8
@@ -173,7 +174,7 @@ class Config:
     MAX_TRABALHADORES = 15
     MAX_TENTATIVAS = 2
     
-    DURACAO_DESTAQUE_HORAS = 6  # ← NOVO: Destaques a cada 6 horas
+    DURACAO_DESTAQUE_HORAS = 6
     DIAS_MAXIMO_NOTICIA = 3
     
     FONTES_POR_VARREDURA = 40
@@ -710,7 +711,8 @@ class GlintTradeScraper:
                     data=datetime.now().strftime('%Y-%m-%d %H:%M'),
                     publicada_em=horario_brasilia(),
                     data_coleta=datetime.now().strftime('%Y-%m-%d'),
-                    dias_para_expirar=dias_expirar
+                    dias_para_expirar=dias_expirar,
+                    destaque=False
                 )
                 
                 noticias_criadas.append(noticia)
@@ -727,18 +729,20 @@ class GlintTradeScraper:
 glint_scraper = GlintTradeScraper()
 
 # ============================================
-# SISTEMA DE DESTAQUES ROTATIVOS (6 HORAS)
+# SISTEMA DE DESTAQUES ROTATIVOS (6 HORAS) - CORRIGIDO!
 # ============================================
 
 class SistemaDestaques:
     """Gerencia os destaques que mudam a cada 6 horas"""
     
     def __init__(self):
-        self.arquivo = 'destaques.json'
+        self.arquivo = config.ARQUIVO_DESTAQUES
         self.destaques_atuais = []
         self.ultima_rotacao = datetime.now()
+        self.carregar()
     
     def carregar(self):
+        """Carrega destaques salvos"""
         if os.path.exists(self.arquivo):
             try:
                 with open(self.arquivo, 'r', encoding='utf-8') as f:
@@ -748,43 +752,71 @@ class SistemaDestaques:
                     if ultima:
                         self.ultima_rotacao = datetime.strptime(ultima, '%Y-%m-%d %H:%M:%S')
                 logger.info(f"[Destaques] Carregados {len(self.destaques_atuais)} destaques")
-            except:
+            except Exception as e:
+                logger.error(f"[Destaques] Erro ao carregar: {e}")
                 self.destaques_atuais = []
     
     def salvar(self):
+        """Salva destaques no arquivo"""
         try:
+            # Converte objetos Noticia para dicionário
+            destaques_dict = []
+            for d in self.destaques_atuais:
+                if hasattr(d, '__dict__'):
+                    destaques_dict.append(asdict(d))
+                else:
+                    destaques_dict.append(d)
+            
             with open(self.arquivo, 'w', encoding='utf-8') as f:
                 json.dump({
-                    'destaques': self.destaques_atuais,
+                    'destaques': destaques_dict,
                     'ultima_rotacao': self.ultima_rotacao.strftime('%Y-%m-%d %H:%M:%S')
                 }, f, ensure_ascii=False, indent=2, default=str)
+            logger.info(f"[Destaques] Salvos {len(self.destaques_atuais)} destaques")
         except Exception as e:
             logger.error(f"[Destaques] Erro ao salvar: {e}")
     
     def precisa_rotacionar(self):
+        """Verifica se passaram 6 horas desde a última rotação"""
         agora = datetime.now()
         diferenca = agora - self.ultima_rotacao
         return diferenca.total_seconds() >= (config.DURACAO_DESTAQUE_HORAS * 3600)
     
     def rotacionar(self, todas_noticias):
-        recentes = []
-        dois_dias_atras = datetime.now() - timedelta(days=2)
-        
-        for n in todas_noticias:
-            try:
-                data_noticia = datetime.strptime(n.data[:10], '%Y-%m-%d')
-                if data_noticia >= dois_dias_atras:
-                    recentes.append(n)
-            except:
-                recentes.append(n)
-        
-        if len(recentes) >= 5:
-            self.destaques_atuais = random.sample(recentes, 5)
-        elif recentes:
-            self.destaques_atuais = recentes
+        """Escolhe novos destaques (5 notícias aleatórias recentes)"""
+        if len(todas_noticias) < 5:
+            logger.warning(f"[Destaques] Poucas notícias para rotacionar: {len(todas_noticias)}")
+            self.destaques_atuais = todas_noticias.copy()
         else:
-            self.destaques_atuais = todas_noticias[:5]
+            # Pega notícias dos últimos 2 dias
+            recentes = []
+            dois_dias_atras = datetime.now() - timedelta(days=2)
+            
+            for n in todas_noticias:
+                try:
+                    data_noticia = datetime.strptime(n.data[:10], '%Y-%m-%d')
+                    if data_noticia >= dois_dias_atras:
+                        recentes.append(n)
+                except:
+                    # Se não conseguir parsear a data, inclui mesmo assim
+                    recentes.append(n)
+            
+            # Se tiver pelo menos 5 recentes, escolhe aleatoriamente
+            if len(recentes) >= 5:
+                self.destaques_atuais = random.sample(recentes, 5)
+            elif len(recentes) > 0:
+                # Se tiver menos de 5 recentes, pega todas
+                self.destaques_atuais = recentes
+                # Completa com notícias mais antigas se necessário
+                if len(self.destaques_atuais) < 5:
+                    antigas = [n for n in todas_noticias if n not in recentes]
+                    if antigas:
+                        self.destaques_atuais.extend(random.sample(antigas, min(5 - len(self.destaques_atuais), len(antigas))))
+            else:
+                # Se não tiver nenhuma recente, pega as primeiras
+                self.destaques_atuais = todas_noticias[:5]
         
+        # Marca como destaque nas notícias
         ids_destaque = [n.id for n in self.destaques_atuais]
         for n in todas_noticias:
             n.destaque = n.id in ids_destaque
@@ -793,6 +825,13 @@ class SistemaDestaques:
         self.salvar()
         
         logger.info(f"[Destaques] Rotação concluída - {len(self.destaques_atuais)} novos destaques")
+        return todas_noticias
+    
+    def aplicar_destaques(self, todas_noticias):
+        """Aplica os destaques atuais à lista de notícias"""
+        ids_destaque = [n.id for n in self.destaques_atuais]
+        for n in todas_noticias:
+            n.destaque = n.id in ids_destaque
         return todas_noticias
 
 sistema_destaques = SistemaDestaques()
@@ -968,17 +1007,20 @@ class RadarAutomatico:
             logger.debug(f"  [Falha] Fonte externa: {e}")
         
         # ===== FINALIZAÇÃO =====
-        if todas_noticias_novas:
+        if todas_noticias_novas or noticias_antigas:
             todas_noticias = todas_noticias_novas + noticias_antigas
             todas_noticias.sort(key=lambda x: x.data, reverse=True)
             todas_noticias = todas_noticias[:config.MAX_NOTICIAS_TOTAL]
             
-            if sistema_destaques.precisa_rotacionar():
+            # ATUALIZA DESTAQUES
+            if sistema_destaques.precisa_rotacionar() and len(todas_noticias) >= 5:
                 todas_noticias = sistema_destaques.rotacionar(todas_noticias)
-            else:
-                ids_destaque = [n.id for n in sistema_destaques.destaques_atuais]
-                for n in todas_noticias:
-                    n.destaque = n.id in ids_destaque
+            elif sistema_destaques.destaques_atuais:
+                # Aplica destaques existentes
+                todas_noticias = sistema_destaques.aplicar_destaques(todas_noticias)
+            elif len(todas_noticias) >= 5:
+                # Primeira execução - cria destaques iniciais
+                todas_noticias = sistema_destaques.rotacionar(todas_noticias)
             
             self._salvar_noticias(todas_noticias)
             
@@ -986,16 +1028,18 @@ class RadarAutomatico:
             geo = [n for n in todas_noticias if n.categoria == 'geopolitica']
             nac = [n for n in todas_noticias if n.categoria == 'nacional']
             inter = [n for n in todas_noticias if n.categoria == 'internacional']
+            destaques = [n for n in todas_noticias if n.destaque]
             
             logger.info(f"\n[OK] Varredura concluida")
             logger.info(f"  ANTIFA: {len(antifa)}")
             logger.info(f"  GEOPOLÍTICA: {len(geo)}")
             logger.info(f"  NACIONAL: {len(nac)}")
             logger.info(f"  INTERNACIONAL: {len(inter)}")
+            logger.info(f"  DESTAQUES: {len(destaques)}")
             logger.info(f"  Novas nesta varredura: {len(todas_noticias_novas)}")
             logger.info(f"  TOTAL ACUMULADO: {len(todas_noticias)}")
         else:
-            logger.info("[Radar] Nenhuma notícia nova encontrada nesta varredura")
+            logger.info("[Radar] Nenhuma notícia encontrada")
     
     def _selecionar_fontes_rodizio(self):
         total_fontes = len(FONTES_CONFIAVEIS)
@@ -1086,7 +1130,8 @@ class RadarAutomatico:
                 data=entrada.get('published', datetime.now().strftime('%Y-%m-%d %H:%M')),
                 publicada_em=horario_brasilia(),
                 data_coleta=datetime.now().strftime('%Y-%m-%d'),
-                dias_para_expirar=dias_expirar
+                dias_para_expirar=dias_expirar,
+                destaque=False
             )
         except Exception as e:
             logger.debug(f"Erro ao criar noticia: {e}")
@@ -1106,11 +1151,13 @@ class RadarAutomatico:
                             if 'dias_para_expirar' not in n:
                                 n['dias_para_expirar'] = 3
                             noticias.append(Noticia(**n))
-                        except:
+                        except Exception as e:
+                            logger.debug(f"Erro ao carregar notícia: {e}")
                             pass
                     logger.info(f"[Radar] Carregadas {len(noticias)} notícias do arquivo")
                     return noticias
-            except:
+            except Exception as e:
+                logger.error(f"[Radar] Erro ao carregar notícias: {e}")
                 return []
         return []
     
@@ -2073,7 +2120,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação com propósito</div>
             <div class="footer-copyright" style="color: #555;">120+ fontes • Atualizado a cada 10 minutos • Notícias duram até 3 dias • Destaques trocam a cada 6h</div>
-            <div class="footer-versao">v29.5 • 120+ Fontes + Glint Trade • PWA Offline • Destaques 6h • Contador 194</div>
+            <div class="footer-versao">v29.6 • 120+ Fontes + Glint Trade • PWA Offline • Destaques CORRIGIDOS • Contador 194</div>
         </div>
 
         <script>
@@ -2187,7 +2234,7 @@ def manifest():
 def service_worker():
     js = '''
 // Service Worker para SHARP - FRONT 16 RJ
-const CACHE_NAME = 'sharp-front-16-v5';
+const CACHE_NAME = 'sharp-front-16-v6';
 const urlsToCache = [
     '/',
     '/manifest.json',
@@ -2261,6 +2308,7 @@ def stats_page():
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
     nacionais = [n for n in noticias if n.categoria == 'nacional']
     internacionais = [n for n in noticias if n.categoria == 'internacional']
+    destaques = [n for n in noticias if n.destaque]
     
     fontes_count = {}
     for n in noticias:
@@ -2295,6 +2343,7 @@ def stats_page():
             <div class="stat-box">
                 <p><strong>Total de visitas:</strong> <span class="numero-grande">{total_visitas}</span></p>
                 <p><strong>Total de notícias:</strong> {len(noticias)}</p>
+                <p><strong>Total de destaques:</strong> {len(destaques)}</p>
                 <p><strong>Total de varreduras realizadas:</strong> {radar.estatisticas['total_varreduras']}</p>
                 <p><strong>Fontes ativas (RSS):</strong> {radar.estatisticas['fontes_funcionando']} de 120</p>
                 <p><strong>Fontes externas nesta sessão:</strong> {radar.estatisticas['fontes_externas']}</p>
@@ -2337,10 +2386,12 @@ def api_stats():
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
     nacionais = [n for n in noticias if n.categoria == 'nacional']
     internacionais = [n for n in noticias if n.categoria == 'internacional']
+    destaques = [n for n in noticias if n.destaque]
     
     return jsonify({
         'total_visitas': total_visitas,
         'total_noticias': len(noticias),
+        'total_destaques': len(destaques),
         'antifa': len(antifa),
         'geopolitica': len(geopolitica),
         'nacional': len(nacionais),
@@ -2352,7 +2403,7 @@ def api_stats():
         'total_varreduras': radar.estatisticas['total_varreduras'],
         'ultima_atualizacao': horario_brasilia(),
         'hora_brasilia': hora_brasilia(),
-        'versao': '29.5',
+        'versao': '29.6',
         'destaques_rotacao_horas': config.DURACAO_DESTAQUE_HORAS
     })
 
@@ -2375,7 +2426,7 @@ def update_cache():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.5 - PWA OFFLINE + GLINT")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.6 - DESTAQUES CORRIGIDOS")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
@@ -2385,20 +2436,26 @@ def inicializar():
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
     nacionais = [n for n in noticias if n.categoria == 'nacional']
     internacionais = [n for n in noticias if n.categoria == 'internacional']
+    destaques = [n for n in noticias if n.destaque]
     
     logger.info(f"Acervo inicial: {len(noticias)} noticias")
     logger.info(f"  ANTIFA: {len(antifa)}")
     logger.info(f"  GEOPOLÍTICA: {len(geopolitica)}")
     logger.info(f"  NACIONAL: {len(nacionais)}")
     logger.info(f"  INTERNACIONAL: {len(internacionais)}")
+    logger.info(f"  DESTAQUES: {len(destaques)}")
     logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)} (120 fontes)")
     logger.info(f"Fontes externas: ATIVAS (Glint Trade anonimizado)")
     logger.info(f"Contador de visitas: iniciando em {total_visitas}")
     
-    sistema_destaques.carregar()
-    if not sistema_destaques.destaques_atuais and noticias:
+    # Inicializa sistema de destaques se necessário
+    if not sistema_destaques.destaques_atuais and len(noticias) >= 5:
         logger.info("[Destaques] Inicializando primeira rotação")
         sistema_destaques.rotacionar(noticias)
+    elif sistema_destaques.destaques_atuais and noticias:
+        # Aplica destaques existentes
+        sistema_destaques.aplicar_destaques(noticias)
+        radar._salvar_noticias(noticias)
     
     radar.iniciar_radar_automatico()
     logger.info("Radar automatico ativado - 120 fontes + fontes externas")
@@ -2419,7 +2476,7 @@ def inicializar():
     logger.info(f"✅ Contador iniciando em {total_visitas} (a partir de 194)")
     logger.info("✅ FONTE EXTERNA ATIVA: Glint Trade (anonimizado como 'Análise Global')")
     logger.info("✅ LOOP DO RADAR CORRIGIDO - Atualizações a cada 10 minutos")
-    logger.info("✅ IMPORT WARNINGS CORRIGIDO - Deploy funcionando")
+    logger.info("✅ DESTAQUES CORRIGIDOS - Aparecem desde a primeira execução")
     logger.info("="*70)
 
 def signal_handler(sig, frame):
