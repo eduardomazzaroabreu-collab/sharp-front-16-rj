@@ -3,13 +3,16 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.3 - INFINITY                 ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.4 - INFINITY                 ║
 ║         RADAR AUTOMATICO COM 120+ FONTES + FONTES EXTERNAS                  ║
-║         CORREÇÃO: LOOP DE ATUALIZAÇÃO ROBUSTO PARA RENDER                    ║
+║         CORREÇÃO: IMPORT WARNINGS ADICIONADO - DEPLOY FUNCIONAL              ║
 ║         "Informação com propósito - Sempre atualizado"                       ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
 
+# ============================================
+# IMPORTS (TODOS OS IMPORTS NECESSÁRIOS)
+# ============================================
 from flask import Flask, jsonify, request, send_from_directory
 from datetime import datetime, timedelta
 import os
@@ -34,6 +37,9 @@ from urllib.parse import urlparse, quote_plus
 import html
 import sys
 import signal
+import warnings  # ← IMPORT CORRIGIDO! (Esse estava faltando)
+
+# Suprime warnings desnecessários
 warnings.filterwarnings('ignore')
 
 # ============================================
@@ -49,7 +55,7 @@ logging.basicConfig(
     format='%(asctime)s - [%(levelname)s] - %(message)s',
     handlers=[
         logging.FileHandler('radar_antifa.log'),
-        logging.StreamHandler(sys.stdout)  # Força saída para stdout (visível no Render)
+        logging.StreamHandler(sys.stdout)
     ]
 )
 logger = logging.getLogger('ANTIFA-RADAR')
@@ -161,7 +167,7 @@ class Config:
     TIMEOUT_REQUISICAO = 8
     TIMEOUT_TOTAL = 30
     DELAY_ENTRE_REQUISICOES = 2
-    DELAY_INICIAL = 5  # Aumentado para 5 segundos
+    DELAY_INICIAL = 5
     
     MAX_NOTICIAS_POR_FONTE = 5
     MAX_NOTICIAS_POR_FONTE_EXTERNA = 8
@@ -275,15 +281,12 @@ class SistemaAntiSono:
     def _loop_ping(self):
         while self.ativo:
             try:
-                # Ping na página principal
                 resp1 = self.session.get(self.url_do_site, timeout=10)
-                # Ping na API de stats
                 resp2 = self.session.get(f"{self.url_do_site}/api/stats", timeout=5)
                 
                 self.contador_pings += 1
                 logger.info(f"[Anti-Sono] Ping #{self.contador_pings} - Status: {resp1.status_code}/{resp2.status_code}")
                 
-                # Aguarda 4 minutos (240 segundos) em vez de 5
                 for _ in range(240):
                     if not self.ativo:
                         break
@@ -291,7 +294,7 @@ class SistemaAntiSono:
                     
             except Exception as e:
                 logger.error(f"[Anti-Sono] Erro no ping: {e}")
-                time.sleep(60)  # Se der erro, tenta de novo em 1 minuto
+                time.sleep(60)
 
 # ============================================
 # CLASSIFICADOR AUTOMÁTICO DE NOTÍCIAS
@@ -839,7 +842,6 @@ class RadarAutomatico:
                 logger.info(f"Ciclo #{self.estatisticas['total_varreduras']} concluído em {duracao_ciclo:.2f}s. "
                           f"Próximo ciclo em {tempo_espera/60:.1f} minutos.")
                 
-                # Espera em intervalos de 5 segundos para poder interromper se necessário
                 espera_restante = tempo_espera
                 while espera_restante > 0 and self.radar_ativo:
                     time.sleep(min(5, espera_restante))
@@ -855,7 +857,6 @@ class RadarAutomatico:
         logger.info(f"[Radar] [{horario_brasilia()}] Iniciando varredura")
         logger.info(f"{'='*60}")
         
-        # Reseta contadores para esta varredura
         self.estatisticas['fontes_externas'] = 0
         
         noticias_antigas = self._carregar_noticias()
@@ -1165,7 +1166,7 @@ def ping():
 
 @app.route('/forcar-atualizacao')
 def forcar_atualizacao():
-    """Endpoint para forçar atualização manual (útil para testes)"""
+    """Endpoint para forçar atualização manual"""
     try:
         thread = threading.Thread(target=radar._executar_varredura)
         thread.daemon = True
@@ -2044,7 +2045,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação com propósito</div>
             <div class="footer-copyright" style="color: #555;">120+ fontes • Atualizado a cada 10 minutos • Notícias duram até 3 dias • Destaques trocam a cada 6h</div>
-            <div class="footer-versao">v29.3 • 120+ Fontes + Fontes Externas • PWA Offline • Loop Corrigido • Contador 194</div>
+            <div class="footer-versao">v29.4 • 120+ Fontes + Fontes Externas • PWA Offline • Loop Corrigido • Contador 194 • Import Warnings OK</div>
         </div>
 
         <script>
@@ -2319,7 +2320,7 @@ def api_stats():
         'total_varreduras': radar.estatisticas['total_varreduras'],
         'ultima_atualizacao': horario_brasilia(),
         'hora_brasilia': hora_brasilia(),
-        'versao': '29.3',
+        'versao': '29.4',
         'destaques_rotacao_horas': config.DURACAO_DESTAQUE_HORAS
     })
 
@@ -2342,10 +2343,9 @@ def update_cache():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.3 - LOOP CORRIGIDO")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.4 - DEPLOY FUNCIONAL")
     logger.info("="*70)
     
-    # Carrega notícias existentes
     noticias = radar._carregar_noticias()
     total_visitas = contador_visitas.get_total()
     
@@ -2363,17 +2363,14 @@ def inicializar():
     logger.info(f"Fontes externas: ATIVAS (Glint Trade anonimizado)")
     logger.info(f"Contador de visitas: iniciando em {total_visitas}")
     
-    # Carrega sistema de destaques
     sistema_destaques.carregar()
     if not sistema_destaques.destaques_atuais and noticias:
         logger.info("[Destaques] Inicializando primeira rotação")
         sistema_destaques.rotacionar(noticias)
     
-    # Inicia o radar
     radar.iniciar_radar_automatico()
     logger.info("Radar automatico ativado - 120 fontes + fontes externas")
     
-    # Inicia anti-sono
     anti_sono = SistemaAntiSono()
     anti_sono.iniciar()
     
@@ -2390,9 +2387,9 @@ def inicializar():
     logger.info(f"✅ Contador iniciando em {total_visitas} (a partir de 194)")
     logger.info("✅ FONTE EXTERNA ATIVA: Glint Trade (anonimizado como 'Análise Global')")
     logger.info("✅ LOOP DO RADAR CORRIGIDO - Atualizações a cada 10 minutos")
+    logger.info("✅ IMPORT WARNINGS CORRIGIDO - Deploy funcionando")
     logger.info("="*70)
 
-# Handler para desligamento gracioso
 def signal_handler(sig, frame):
     logger.info("Recebido sinal de desligamento. Parando radar...")
     radar.radar_ativo = False
@@ -2401,7 +2398,6 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
-# Inicializa tudo
 inicializar()
 
 if __name__ == '__main__':
