@@ -3,9 +3,9 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 30.0 - FRESCO                   ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 30.1 - FRESCO                   ║
 ║         RADAR AUTOMATICO COM 120+ FONTES + FONTES EXTERNAS                  ║
-║         CORREÇÃO: DESTAQUES 3H - NOTÍCIAS SEMPRE FRESCAS                    ║
+║         CORREÇÃO: ÍCONE ABC REMOVIDO - TRADUTOR INVISÍVEL ATIVO             ║
 ║         "Informação fresca a cada 5 horas - Nada de notícia velha"           ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -59,16 +59,16 @@ logging.basicConfig(
 logger = logging.getLogger('ANTIFA-RADAR')
 
 # ============================================
-# CONTADOR DE VISITANTES (COMEÇA EM 194)
+# CONTADOR DE VISITANTES (COMEÇA EM 240)
 # ============================================
 
 class ContadorVisitantes:
-    """Contador de visitas por IP - começa em 194"""
+    """Contador de visitas por IP - começa em 240"""
     
     def __init__(self, arquivo='contador_visitas.json'):
         self.arquivo = arquivo
         self.visitas_unicas = set()
-        self.total_visitas = 235  # Atualizado para 235
+        self.total_visitas = 240  # Atualizado para 240
         self.carregar_dados()
     
     def carregar_dados(self):
@@ -77,7 +77,7 @@ class ContadorVisitantes:
                 with open(self.arquivo, 'r', encoding='utf-8') as f:
                     dados = json.load(f)
                     self.visitas_unicas = set(dados.get('ips', []))
-                    self.total_visitas = dados.get('total', 235)
+                    self.total_visitas = dados.get('total', 240)
                 logger.info(f"[Contador] Carregado: {self.total_visitas} visitas")
             except Exception as e:
                 logger.error(f"[Contador] Erro ao carregar: {e}")
@@ -115,11 +115,11 @@ class ContadorVisitantes:
 contador_visitas = ContadorVisitantes()
 
 # ============================================
-# TRADUTOR INTEGRADO
+# TRADUTOR INTEGRADO (INVISÍVEL - SEM ÍCONE)
 # ============================================
 
 class TradutorIntegrado:
-    """Tradutor usando Google Translate"""
+    """Tradutor usando Google Translate - Totalmente invisível"""
     
     @staticmethod
     def traduzir(texto, idioma_destino='pt'):
@@ -149,7 +149,7 @@ class TradutorIntegrado:
 tradutor = TradutorIntegrado()
 
 # ============================================
-# CONFIGURACOES AVANÇADAS - ATUALIZADAS!
+# CONFIGURACOES AVANÇADAS
 # ============================================
 
 class Config:
@@ -174,7 +174,7 @@ class Config:
     MAX_TRABALHADORES = 15
     MAX_TENTATIVAS = 2
     
-    # ===== NOVAS CONFIGURAÇÕES DE DURAÇÃO =====
+    # Configurações de duração
     DURACAO_DESTAQUE_HORAS = 3  # Destaques mudam a cada 3 horas
     DURACAO_MAXIMA_NOTICIA_HORAS = 5  # Todas as notícias duram no máximo 5 horas
     DIAS_MAXIMO_NOTICIA = 0.21  # Aproximadamente 5 horas em dias
@@ -731,7 +731,7 @@ class GlintTradeScraper:
 glint_scraper = GlintTradeScraper()
 
 # ============================================
-# SISTEMA DE DESTAQUES ROTATIVOS (3 HORAS) - ATUALIZADO!
+# SISTEMA DE DESTAQUES ROTATIVOS (3 HORAS)
 # ============================================
 
 class SistemaDestaques:
@@ -802,7 +802,7 @@ class SistemaDestaques:
         self.ultima_rotacao = datetime.now()
         self.salvar()
         
-        logger.info(f"[Destaques] Rotação concluída - {len(self.destaques_atuais)} novos destaques (mais recentes)")
+        logger.info(f"[Destaques] Rotação concluída - {len(self.destaques_atuais)} novos destaques")
         return todas_noticias
     
     def aplicar_destaques(self, todas_noticias):
@@ -1246,7 +1246,7 @@ def forcar_atualizacao():
         }), 500
 
 # ============================================
-# PAGINA PRINCIPAL - ATUALIZADA!
+# PAGINA PRINCIPAL - ATUALIZADA (SEM ÍCONE ABC)
 # ============================================
 
 @app.route('/')
@@ -1279,18 +1279,17 @@ def home():
         except:
             return "nova"
     
-    # Destaques HTML
+    # Destaques HTML (agora apenas "DESTAQUES")
     destaques_html = ''
     for n in destaques:
         bandeira = get_bandeira(n.pais)
         idade = idade_noticia(n.data)
         destaques_html += f'''
         <div class="destaque-card" data-categoria="{n.categoria}" data-id="{n.id}">
-            <span class="destaque-tag">⭐ DESTAQUE</span>
+            <span class="destaque-tag">⭐ DESTAQUES</span>
             <span class="idade-tag">{idade}</span>
             <div class="destaque-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
             </div>
             <h3>{n.titulo}</h3>
             <p class="resumo">{n.resumo[:150]}...</p>
@@ -1311,7 +1310,7 @@ def home():
         </div>
         '''
     
-    # Container para cada categoria com botão "Ver mais"
+    # Container para cada categoria com botão "Ver mais" (SEM ÍCONE ABC)
     def criar_coluna(titulo, icone, noticias_lista, cor, categoria_id, limite_inicial=12):
         noticias_html = ''
         for i, n in enumerate(noticias_lista[:limite_inicial]):
@@ -1326,7 +1325,6 @@ def home():
                 <div class="noticia-header">
                     <span class="fonte">{bandeira} {n.fonte}</span>
                     <span class="pais">[{n.pais}]</span>
-                    <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
                 </div>
                 <h4>{n.titulo}</h4>
                 <p class="resumo">{n.resumo[:120]}...</p>
@@ -1569,17 +1567,6 @@ def home():
                 font-size: 0.7rem;
                 color: #ffaaaa;
                 z-index: 10;
-            }}
-            
-            .tooltip {{
-                cursor: help;
-                font-size: 0.8rem;
-                opacity: 0.7;
-                transition: opacity 0.3s;
-            }}
-            
-            .tooltip:hover {{
-                opacity: 1;
             }}
             
             .filtros-container {{
@@ -2131,7 +2118,7 @@ def home():
         </div>
         
         <div class="secao" id="secao-destaques">
-            <div class="secao-titulo">⭐ DESTAQUES DO RADAR <span class="badge" id="contador-destaques">{len(destaques)}</span></div>
+            <div class="secao-titulo">⭐ DESTAQUES <span class="badge" id="contador-destaques">{len(destaques)}</span></div>
             <div class="destaques-grid" id="destaques-grid">{destaques_conteudo}</div>
         </div>
         
@@ -2157,7 +2144,7 @@ def home():
             </div>
             <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação fresca sempre</div>
             <div class="footer-copyright" style="color: #555;">120+ fontes • Atualizado a cada 10 minutos • Notícias duram 5 horas • Destaques trocam a cada 3h</div>
-            <div class="footer-versao">v30.0 • 120+ Fontes + Glint Trade • PWA Offline • Notícias sempre frescas • Contador 235</div>
+            <div class="footer-versao">v30.1 • 120+ Fontes + Glint Trade • PWA Offline • Ícone ABC removido • Contador 240</div>
         </div>
 
         <script>
@@ -2300,7 +2287,7 @@ def manifest():
 def service_worker():
     js = '''
 // Service Worker para SHARP - FRONT 16 RJ
-const CACHE_NAME = 'sharp-front-16-v7';
+const CACHE_NAME = 'sharp-front-16-v8';
 const urlsToCache = [
     '/',
     '/manifest.json',
@@ -2487,7 +2474,7 @@ def api_stats():
         'total_varreduras': radar.estatisticas['total_varreduras'],
         'ultima_atualizacao': horario_brasilia(),
         'hora_brasilia': hora_brasilia(),
-        'versao': '30.0',
+        'versao': '30.1',
         'duracao_noticias_horas': 5,
         'rotacao_destaques_horas': 3
     })
@@ -2511,7 +2498,7 @@ def update_cache():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v30.0 - NOTÍCIAS FRESCAS")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v30.1 - ÍCONE ABC REMOVIDO")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
@@ -2531,7 +2518,7 @@ def inicializar():
     logger.info(f"  DESTAQUES: {len(destaques)}")
     logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)} (120 fontes)")
     logger.info(f"Fontes externas: ATIVAS (Glint Trade anonimizado)")
-    logger.info(f"Contador de visitas: {total_visitas}")
+    logger.info(f"Contador de visitas: {total_visitas} (iniciando em 240)")
     
     # Inicializa sistema de destaques se necessário
     if not sistema_destaques.destaques_atuais and len(noticias) >= 5:
@@ -2549,7 +2536,7 @@ def inicializar():
     anti_sono.iniciar()
     
     logger.info("✅ Sistema Anti-Sono ativado")
-    logger.info("✅ Tradutor ativo - Notícias em Português")
+    logger.info("✅ Tradutor ativo - Notícias em Português (INVISÍVEL - SEM ÍCONE)")
     logger.info("✅ 120+ fontes organizadas por categoria")
     logger.info("✅ Classificador automático de notícias")
     logger.info("✅ Detector de duplicatas por similaridade")
@@ -2557,11 +2544,12 @@ def inicializar():
     logger.info("✅ Sistema de rodízio de fontes")
     logger.info("✅ PWA / MODO OFFLINE - Leia sem internet!")
     logger.info(f"✅ Destaques rotativos a cada 3 horas")
-    logger.info(f"✅ Contador: {total_visitas} visitas")
+    logger.info(f"✅ Contador: iniciando em 240")
     logger.info("✅ FONTE EXTERNA ATIVA: Glint Trade (anonimizado como 'Análise Global')")
     logger.info("✅ LOOP DO RADAR CORRIGIDO - Atualizações a cada 10 minutos")
     logger.info("✅ BOTÕES 'VER MAIS' em cada categoria")
     logger.info("✅ Notícias mostram idade (min/horas)")
+    logger.info("✅ ÍCONE ABC REMOVIDO - Tradutor invisível")
     logger.info("="*70)
 
 def signal_handler(sig, frame):
