@@ -3,10 +3,10 @@
 """
 ╔═══════════════════════════════════════════════════════════════════════════════╗
 ║                    SHARP - FRONT 16 RJ                                        ║
-║              SISTEMA SUPREMO ANTIFA - VERSÃO 29.6 - INFINITY                 ║
+║              SISTEMA SUPREMO ANTIFA - VERSÃO 30.0 - FRESCO                   ║
 ║         RADAR AUTOMATICO COM 120+ FONTES + FONTES EXTERNAS                  ║
-║         CORREÇÃO: DESTAQUES FUNCIONANDO DESDE A PRIMEIRA EXECUÇÃO           ║
-║         "Informação com propósito - Sempre atualizado"                       ║
+║         CORREÇÃO: DESTAQUES 3H - NOTÍCIAS SEMPRE FRESCAS                    ║
+║         "Informação fresca a cada 5 horas - Nada de notícia velha"           ║
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -68,7 +68,7 @@ class ContadorVisitantes:
     def __init__(self, arquivo='contador_visitas.json'):
         self.arquivo = arquivo
         self.visitas_unicas = set()
-        self.total_visitas = 194
+        self.total_visitas = 235  # Atualizado para 235
         self.carregar_dados()
     
     def carregar_dados(self):
@@ -77,7 +77,7 @@ class ContadorVisitantes:
                 with open(self.arquivo, 'r', encoding='utf-8') as f:
                     dados = json.load(f)
                     self.visitas_unicas = set(dados.get('ips', []))
-                    self.total_visitas = dados.get('total', 194)
+                    self.total_visitas = dados.get('total', 235)
                 logger.info(f"[Contador] Carregado: {self.total_visitas} visitas")
             except Exception as e:
                 logger.error(f"[Contador] Erro ao carregar: {e}")
@@ -149,12 +149,12 @@ class TradutorIntegrado:
 tradutor = TradutorIntegrado()
 
 # ============================================
-# CONFIGURACOES AVANÇADAS
+# CONFIGURACOES AVANÇADAS - ATUALIZADAS!
 # ============================================
 
 class Config:
     NOME_SITE = "SHARP - FRONT 16 RJ"
-    LEMA = "A informacao e nossa arma mais poderosa"
+    LEMA = "Informação fresca a cada 5 horas"
     
     ARQUIVO_NOTICIAS = 'noticias_salvas.json'
     ARQUIVO_CACHE = 'cache_fontes.json'
@@ -174,8 +174,10 @@ class Config:
     MAX_TRABALHADORES = 15
     MAX_TENTATIVAS = 2
     
-    DURACAO_DESTAQUE_HORAS = 6
-    DIAS_MAXIMO_NOTICIA = 3
+    # ===== NOVAS CONFIGURAÇÕES DE DURAÇÃO =====
+    DURACAO_DESTAQUE_HORAS = 3  # Destaques mudam a cada 3 horas
+    DURACAO_MAXIMA_NOTICIA_HORAS = 5  # Todas as notícias duram no máximo 5 horas
+    DIAS_MAXIMO_NOTICIA = 0.21  # Aproximadamente 5 horas em dias
     
     FONTES_POR_VARREDURA = 40
     TOTAL_FONTES = 120
@@ -203,6 +205,16 @@ def hora_brasilia():
     utc = datetime.utcnow()
     brasilia = utc - timedelta(hours=3)
     return brasilia.strftime('%H:%M')
+
+def horas_desde(data_str):
+    """Calcula quantas horas se passaram desde uma data"""
+    try:
+        data = datetime.strptime(data_str, '%Y-%m-%d %H:%M')
+        agora = datetime.now()
+        diferenca = agora - data
+        return diferenca.total_seconds() / 3600
+    except:
+        return 0
 
 # ============================================
 # PALAVRAS PROIBIDAS (FILTRO)
@@ -376,13 +388,12 @@ class DetectorDuplicatas:
 detector = DetectorDuplicatas()
 
 # ============================================
-# SISTEMA DE PRIORIDADE
+# SISTEMA DE PRIORIDADE (SIMPLIFICADO - TODAS 5H)
 # ============================================
 
 class SistemaPrioridade:
-    PRIORIDADE_ALTA = 5
-    PRIORIDADE_MEDIA = 3
-    PRIORIDADE_BAIXA = 1
+    # Todas as notícias duram 5 horas agora
+    DURACAO_PADRAO_HORAS = 5
     
     FONTES_PRIORITARIAS = [
         'Brasil de Fato', 'MST', 'Al Jazeera', 'The Intercept',
@@ -392,18 +403,8 @@ class SistemaPrioridade:
     
     @classmethod
     def calcular_prioridade(cls, titulo, fonte):
-        titulo_lower = titulo.lower()
-        
-        if fonte in cls.FONTES_PRIORITARIAS:
-            return cls.PRIORIDADE_ALTA
-        
-        if any(p in titulo_lower for p in ['urgente', 'breaking', 'ao vivo', 'agora']):
-            return cls.PRIORIDADE_ALTA
-        
-        if any(p in titulo_lower for p in ['guerra', 'conflito', 'protesto', 'greve']):
-            return cls.PRIORIDADE_MEDIA
-        
-        return cls.PRIORIDADE_BAIXA
+        # Todas as notícias têm a mesma duração agora (5 horas)
+        return cls.DURACAO_PADRAO_HORAS
 
 prioridade = SistemaPrioridade()
 
@@ -695,7 +696,8 @@ class GlintTradeScraper:
                     self.nome_apresentacao
                 )
                 
-                dias_expirar = prioridade.calcular_prioridade(titulo, self.nome_apresentacao)
+                # Todas as notícias duram 5 horas
+                horas_expirar = prioridade.calcular_prioridade(titulo, self.nome_apresentacao)
                 
                 noticia = Noticia(
                     id=hashlib.md5(item['link'].encode()).hexdigest()[:8],
@@ -710,8 +712,8 @@ class GlintTradeScraper:
                     link=item['link'],
                     data=datetime.now().strftime('%Y-%m-%d %H:%M'),
                     publicada_em=horario_brasilia(),
-                    data_coleta=datetime.now().strftime('%Y-%m-%d'),
-                    dias_para_expirar=dias_expirar,
+                    data_coleta=datetime.now().strftime('%Y-%m-%d %H:%M'),  # Agora com hora
+                    horas_para_expirar=horas_expirar,  # 5 horas
                     destaque=False
                 )
                 
@@ -729,11 +731,11 @@ class GlintTradeScraper:
 glint_scraper = GlintTradeScraper()
 
 # ============================================
-# SISTEMA DE DESTAQUES ROTATIVOS (6 HORAS) - CORRIGIDO!
+# SISTEMA DE DESTAQUES ROTATIVOS (3 HORAS) - ATUALIZADO!
 # ============================================
 
 class SistemaDestaques:
-    """Gerencia os destaques que mudam a cada 6 horas"""
+    """Gerencia os destaques que mudam a cada 3 horas"""
     
     def __init__(self):
         self.arquivo = config.ARQUIVO_DESTAQUES
@@ -777,44 +779,20 @@ class SistemaDestaques:
             logger.error(f"[Destaques] Erro ao salvar: {e}")
     
     def precisa_rotacionar(self):
-        """Verifica se passaram 6 horas desde a última rotação"""
+        """Verifica se passaram 3 horas desde a última rotação"""
         agora = datetime.now()
         diferenca = agora - self.ultima_rotacao
         return diferenca.total_seconds() >= (config.DURACAO_DESTAQUE_HORAS * 3600)
     
     def rotacionar(self, todas_noticias):
-        """Escolhe novos destaques (5 notícias aleatórias recentes)"""
+        """Escolhe novos destaques (5 notícias mais recentes)"""
         if len(todas_noticias) < 5:
             logger.warning(f"[Destaques] Poucas notícias para rotacionar: {len(todas_noticias)}")
             self.destaques_atuais = todas_noticias.copy()
         else:
-            # Pega notícias dos últimos 2 dias
-            recentes = []
-            dois_dias_atras = datetime.now() - timedelta(days=2)
-            
-            for n in todas_noticias:
-                try:
-                    data_noticia = datetime.strptime(n.data[:10], '%Y-%m-%d')
-                    if data_noticia >= dois_dias_atras:
-                        recentes.append(n)
-                except:
-                    # Se não conseguir parsear a data, inclui mesmo assim
-                    recentes.append(n)
-            
-            # Se tiver pelo menos 5 recentes, escolhe aleatoriamente
-            if len(recentes) >= 5:
-                self.destaques_atuais = random.sample(recentes, 5)
-            elif len(recentes) > 0:
-                # Se tiver menos de 5 recentes, pega todas
-                self.destaques_atuais = recentes
-                # Completa com notícias mais antigas se necessário
-                if len(self.destaques_atuais) < 5:
-                    antigas = [n for n in todas_noticias if n not in recentes]
-                    if antigas:
-                        self.destaques_atuais.extend(random.sample(antigas, min(5 - len(self.destaques_atuais), len(antigas))))
-            else:
-                # Se não tiver nenhuma recente, pega as primeiras
-                self.destaques_atuais = todas_noticias[:5]
+            # Ordena por data (mais recentes primeiro) e pega as 5 primeiras
+            noticias_ordenadas = sorted(todas_noticias, key=lambda x: x.data, reverse=True)
+            self.destaques_atuais = noticias_ordenadas[:5]
         
         # Marca como destaque nas notícias
         ids_destaque = [n.id for n in self.destaques_atuais]
@@ -824,7 +802,7 @@ class SistemaDestaques:
         self.ultima_rotacao = datetime.now()
         self.salvar()
         
-        logger.info(f"[Destaques] Rotação concluída - {len(self.destaques_atuais)} novos destaques")
+        logger.info(f"[Destaques] Rotação concluída - {len(self.destaques_atuais)} novos destaques (mais recentes)")
         return todas_noticias
     
     def aplicar_destaques(self, todas_noticias):
@@ -837,7 +815,7 @@ class SistemaDestaques:
 sistema_destaques = SistemaDestaques()
 
 # ============================================
-# SISTEMA DE RADAR CORRIGIDO (COM LOOP ROBUSTO)
+# SISTEMA DE RADAR CORRIGIDO (COM EXPURGO DE 5 HORAS)
 # ============================================
 
 @dataclass
@@ -855,7 +833,7 @@ class Noticia:
     data: str
     publicada_em: str
     data_coleta: str
-    dias_para_expirar: int = 3
+    horas_para_expirar: int = 5  # Todas duram 5 horas agora
     destaque: bool = False
 
 class RadarAutomatico:
@@ -922,7 +900,7 @@ class RadarAutomatico:
         self.estatisticas['fontes_externas'] = 0
         
         noticias_antigas = self._carregar_noticias()
-        noticias_antigas = self._expurgar_noticias_antigas(noticias_antigas)
+        noticias_antigas = self._expurgar_noticias_antigas(noticias_antigas)  # Expurgo por horas
         
         links_antigos = {n.link for n in noticias_antigas}
         todas_noticias_novas = []
@@ -1009,17 +987,18 @@ class RadarAutomatico:
         # ===== FINALIZAÇÃO =====
         if todas_noticias_novas or noticias_antigas:
             todas_noticias = todas_noticias_novas + noticias_antigas
+            # Ordena por data (mais recentes primeiro)
             todas_noticias.sort(key=lambda x: x.data, reverse=True)
             todas_noticias = todas_noticias[:config.MAX_NOTICIAS_TOTAL]
             
-            # ATUALIZA DESTAQUES
+            # ATUALIZA DESTAQUES (a cada 3 horas)
             if sistema_destaques.precisa_rotacionar() and len(todas_noticias) >= 5:
                 todas_noticias = sistema_destaques.rotacionar(todas_noticias)
             elif sistema_destaques.destaques_atuais:
                 # Aplica destaques existentes
                 todas_noticias = sistema_destaques.aplicar_destaques(todas_noticias)
             elif len(todas_noticias) >= 5:
-                # Primeira execução - cria destaques iniciais
+                # Primeira execução - cria destaques iniciais (mais recentes)
                 todas_noticias = sistema_destaques.rotacionar(todas_noticias)
             
             self._salvar_noticias(todas_noticias)
@@ -1061,22 +1040,34 @@ class RadarAutomatico:
         return fontes_selecionadas
     
     def _expurgar_noticias_antigas(self, noticias):
-        hoje = datetime.now()
+        """Remove notícias com mais de 5 horas"""
+        agora = datetime.now()
         noticias_recentes = []
+        expurgadas = 0
         
         for n in noticias:
             try:
-                data_coleta = datetime.strptime(n.data_coleta, '%Y-%m-%d')
-                dias_passados = (hoje - data_coleta).days
+                # Tenta parsear a data de coleta (agora com hora)
+                if ' ' in n.data_coleta:
+                    data_coleta = datetime.strptime(n.data_coleta, '%Y-%m-%d %H:%M')
+                else:
+                    # Fallback para formato antigo
+                    data_coleta = datetime.strptime(n.data_coleta + ' 00:00', '%Y-%m-%d %H:%M')
                 
-                if dias_passados <= n.dias_para_expirar:
+                horas_passadas = (agora - data_coleta).total_seconds() / 3600
+                
+                # Se tiver menos de 5 horas, mantém
+                if horas_passadas <= n.horas_para_expirar:
                     noticias_recentes.append(n)
-            except:
+                else:
+                    expurgadas += 1
+            except Exception as e:
+                # Se não conseguir parsear, mantém por segurança
+                logger.debug(f"Erro ao expurgar: {e}")
                 noticias_recentes.append(n)
         
-        expurgadas = len(noticias) - len(noticias_recentes)
         if expurgadas > 0:
-            logger.info(f"  Expurgo: {expurgadas} notícias antigas removidas")
+            logger.info(f"  Expurgo: {expurgadas} notícias com mais de 5 horas removidas")
         
         return noticias_recentes
     
@@ -1114,7 +1105,8 @@ class RadarAutomatico:
                 fonte['nome']
             )
             
-            dias_expirar = prioridade.calcular_prioridade(titulo_original, fonte['nome'])
+            # Todas as notícias duram 5 horas
+            horas_expirar = prioridade.calcular_prioridade(titulo_original, fonte['nome'])
             
             return Noticia(
                 id=hashlib.md5(entrada.link.encode()).hexdigest()[:8],
@@ -1129,8 +1121,8 @@ class RadarAutomatico:
                 link=entrada.link,
                 data=entrada.get('published', datetime.now().strftime('%Y-%m-%d %H:%M')),
                 publicada_em=horario_brasilia(),
-                data_coleta=datetime.now().strftime('%Y-%m-%d'),
-                dias_para_expirar=dias_expirar,
+                data_coleta=datetime.now().strftime('%Y-%m-%d %H:%M'),  # Agora com hora
+                horas_para_expirar=horas_expirar,  # 5 horas
                 destaque=False
             )
         except Exception as e:
@@ -1146,10 +1138,11 @@ class RadarAutomatico:
                     noticias = []
                     for n in noticias_dict:
                         try:
+                            # Compatibilidade com versões anteriores
                             if 'data_coleta' not in n:
-                                n['data_coleta'] = n.get('data', datetime.now().strftime('%Y-%m-%d'))[:10]
-                            if 'dias_para_expirar' not in n:
-                                n['dias_para_expirar'] = 3
+                                n['data_coleta'] = n.get('data', datetime.now().strftime('%Y-%m-%d')) + ' 00:00'
+                            if 'horas_para_expirar' not in n:
+                                n['horas_para_expirar'] = 5
                             noticias.append(Noticia(**n))
                         except Exception as e:
                             logger.debug(f"Erro ao carregar notícia: {e}")
@@ -1253,7 +1246,7 @@ def forcar_atualizacao():
         }), 500
 
 # ============================================
-# PAGINA PRINCIPAL
+# PAGINA PRINCIPAL - ATUALIZADA!
 # ============================================
 
 @app.route('/')
@@ -1263,18 +1256,38 @@ def home():
     
     noticias = radar._carregar_noticias()
     
+    # Ordena por data (mais recentes primeiro)
+    noticias = sorted(noticias, key=lambda x: x.data, reverse=True)
+    
     antifa = [n for n in noticias if n.categoria == 'antifa']
     geopolitica = [n for n in noticias if n.categoria == 'geopolitica']
     nacionais = [n for n in noticias if n.categoria == 'nacional']
     internacionais = [n for n in noticias if n.categoria == 'internacional']
     destaques = [n for n in noticias if n.destaque][:5]
     
+    # Função para calcular idade da notícia em horas
+    def idade_noticia(data_str):
+        try:
+            data = datetime.strptime(data_str, '%Y-%m-%d %H:%M')
+            agora = datetime.now()
+            horas = (agora - data).total_seconds() / 3600
+            if horas < 1:
+                minutos = int(horas * 60)
+                return f"{minutos} min"
+            else:
+                return f"{int(horas)}h"
+        except:
+            return "nova"
+    
+    # Destaques HTML
     destaques_html = ''
     for n in destaques:
         bandeira = get_bandeira(n.pais)
+        idade = idade_noticia(n.data)
         destaques_html += f'''
-        <div class="destaque-card" data-categoria="{n.categoria}">
+        <div class="destaque-card" data-categoria="{n.categoria}" data-id="{n.id}">
             <span class="destaque-tag">⭐ DESTAQUE</span>
+            <span class="idade-tag">{idade}</span>
             <div class="destaque-header">
                 <span class="fonte">{bandeira} {n.fonte}</span>
                 <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
@@ -1298,81 +1311,54 @@ def home():
         </div>
         '''
     
-    antifa_html = ''
-    for n in antifa[:12]:
-        bandeira = get_bandeira(n.pais)
-        antifa_html += f'''
-        <div class="noticia antifa" data-categoria="antifa">
-            <div class="noticia-header">
-                <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">[{n.pais}]</span>
-                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
+    # Container para cada categoria com botão "Ver mais"
+    def criar_coluna(titulo, icone, noticias_lista, cor, categoria_id, limite_inicial=12):
+        noticias_html = ''
+        for i, n in enumerate(noticias_lista[:limite_inicial]):
+            if i >= limite_inicial:
+                break
+            bandeira = get_bandeira(n.pais)
+            idade = idade_noticia(n.data)
+            display = 'block' if i < 12 else 'none'
+            noticias_html += f'''
+            <div class="noticia {categoria_id}" data-categoria="{categoria_id}" data-id="{n.id}" style="display: {display}">
+                <span class="idade-tag-pequena">{idade}</span>
+                <div class="noticia-header">
+                    <span class="fonte">{bandeira} {n.fonte}</span>
+                    <span class="pais">[{n.pais}]</span>
+                    <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
+                </div>
+                <h4>{n.titulo}</h4>
+                <p class="resumo">{n.resumo[:120]}...</p>
+                <div class="noticia-footer">
+                    <span class="data">{n.data[:10]}</span>
+                    <a href="{n.link}" target="_blank" class="link">🔗</a>
+                </div>
             </div>
-            <h4>{n.titulo}</h4>
-            <p class="resumo">{n.resumo[:120]}...</p>
-            <div class="noticia-footer">
-                <span class="data">{n.data[:10]}</span>
-                <a href="{n.link}" target="_blank" class="link">🔗</a>
+            '''
+        
+        ver_mais_btn = ''
+        if len(noticias_lista) > limite_inicial:
+            ver_mais_btn = f'''
+            <button class="ver-mais-btn" onclick="verMais('{categoria_id}')">
+                Ver mais {len(noticias_lista) - limite_inicial} notícias ↓
+            </button>
+            '''
+        
+        return f'''
+        <div class="coluna" data-categoria="{categoria_id}">
+            <h2 style="border-left-color: {cor};">{icone} {titulo} <span class="badge" id="contador-{categoria_id}">{len(noticias_lista)}</span></h2>
+            <div id="noticias-{categoria_id}">
+                {noticias_html}
             </div>
+            {ver_mais_btn}
         </div>
         '''
     
-    geo_html = ''
-    for n in geopolitica[:12]:
-        bandeira = get_bandeira(n.pais)
-        geo_html += f'''
-        <div class="noticia" data-categoria="geopolitica">
-            <div class="noticia-header">
-                <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">[{n.pais}]</span>
-                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
-            </div>
-            <h4>{n.titulo}</h4>
-            <p class="resumo">{n.resumo[:120]}...</p>
-            <div class="noticia-footer">
-                <span class="data">{n.data[:10]}</span>
-                <a href="{n.link}" target="_blank" class="link">🔗</a>
-            </div>
-        </div>
-        '''
-    
-    nacional_html = ''
-    for n in nacionais[:12]:
-        bandeira = get_bandeira(n.pais)
-        nacional_html += f'''
-        <div class="noticia nacional" data-categoria="nacional">
-            <div class="noticia-header">
-                <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">NACIONAL</span>
-                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
-            </div>
-            <h4>{n.titulo}</h4>
-            <p class="resumo">{n.resumo[:120]}...</p>
-            <div class="noticia-footer">
-                <span class="data">{n.data[:10]}</span>
-                <a href="{n.link}" target="_blank" class="link">🔗</a>
-            </div>
-        </div>
-        '''
-    
-    internacional_html = ''
-    for n in internacionais[:12]:
-        bandeira = get_bandeira(n.pais)
-        internacional_html += f'''
-        <div class="noticia internacional" data-categoria="internacional">
-            <div class="noticia-header">
-                <span class="fonte">{bandeira} {n.fonte}</span>
-                <span class="pais">[{n.pais}]</span>
-                <span class="tooltip" title="Original: {html.escape(n.titulo_original)}">🔤</span>
-            </div>
-            <h4>{n.titulo}</h4>
-            <p class="resumo">{n.resumo[:120]}...</p>
-            <div class="noticia-footer">
-                <span class="data">{n.data[:10]}</span>
-                <a href="{n.link}" target="_blank" class="link">🔗</a>
-            </div>
-        </div>
-        '''
+    antifa_coluna = criar_coluna('ANTIFA', '🏴', antifa, '#ff0000', 'antifa')
+    geo_coluna = criar_coluna('GEOPOLÍTICA', '⚔️', geopolitica, '#ffaa00', 'geopolitica')
+    nacional_coluna = criar_coluna('NACIONAL', '🇧🇷', nacionais, '#00cc00', 'nacional')
+    internacional_coluna = criar_coluna('INTERNACIONAL', '🌎', internacionais, '#0066cc', 'internacional')
     
     continentes_html = ''
     for cont in radar.estatisticas['continentes']:
@@ -1572,6 +1558,19 @@ def home():
                 z-index: 10;
             }}
             
+            .info-badge {{
+                position: absolute;
+                bottom: 10px;
+                left: 20px;
+                background: rgba(255,0,0,0.2);
+                border: 1px solid #ff0000;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 0.7rem;
+                color: #ffaaaa;
+                z-index: 10;
+            }}
+            
             .tooltip {{
                 cursor: help;
                 font-size: 0.8rem;
@@ -1720,6 +1719,30 @@ def home():
                 margin-bottom: 12px;
             }}
             
+            .idade-tag {{
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.6);
+                color: #ffaa00;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 0.65rem;
+                border: 1px solid #ffaa00;
+            }}
+            
+            .idade-tag-pequena {{
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(0,0,0,0.6);
+                color: #ffaa00;
+                padding: 2px 6px;
+                border-radius: 8px;
+                font-size: 0.6rem;
+                border: 1px solid #ffaa00;
+            }}
+            
             .destaque-header {{
                 display: flex;
                 justify-content: space-between;
@@ -1753,6 +1776,7 @@ def home():
                 padding: 20px;
                 border: 1px solid #333;
                 border-top: 3px solid #ff0000;
+                position: relative;
             }}
             
             .coluna h2 {{
@@ -1782,6 +1806,7 @@ def home():
                 margin-bottom: 15px;
                 border-left: 3px solid #ff0000;
                 transition: all 0.3s;
+                position: relative;
             }}
             
             .noticia:hover {{
@@ -1789,16 +1814,20 @@ def home():
                 background: #1a1a1a;
             }}
             
+            .noticia.antifa {{
+                border-left-color: #ff0000;
+            }}
+            
+            .noticia.geopolitica {{
+                border-left-color: #ffaa00;
+            }}
+            
             .noticia.nacional {{
                 border-left-color: #00cc00;
             }}
             
             .noticia.internacional {{
-                border-left-color: #ffaa00;
-            }}
-            
-            .noticia.antifa {{
-                border-left-color: #ff0000;
+                border-left-color: #0066cc;
             }}
             
             .noticia-header {{
@@ -1831,6 +1860,7 @@ def home():
                 margin-bottom: 10px;
                 line-height: 1.4;
                 color: #fff;
+                padding-right: 35px;
             }}
             
             .resumo {{
@@ -1874,6 +1904,24 @@ def home():
             }}
             
             .botao:hover {{
+                background: #ff0000;
+                color: #000;
+            }}
+            
+            .ver-mais-btn {{
+                background: transparent;
+                border: 1px solid #ff0000;
+                color: #ff0000;
+                padding: 8px 15px;
+                border-radius: 25px;
+                width: 100%;
+                margin-top: 10px;
+                cursor: pointer;
+                font-size: 0.85rem;
+                transition: all 0.3s;
+            }}
+            
+            .ver-mais-btn:hover {{
                 background: #ff0000;
                 color: #000;
             }}
@@ -2059,6 +2107,7 @@ def home():
             </div>
             
             <div class="horario-header">🇧🇷 {horario_brasilia()}</div>
+            <div class="info-badge">⏱️ Notícias duram 5h | Destaques trocam a cada 3h</div>
             
             <div class="titulo-container">
                 <span class="simbolo-anarquista">Ⓐ</span>
@@ -2067,14 +2116,14 @@ def home():
                 <span class="titulo-vermelho">RJ</span>
                 <span class="simbolo-comunista">☭</span>
             </div>
-            <div class="titulo-branco">Informação Antifascista</div>
+            <div class="titulo-branco">Informação sempre fresca - 5 horas de vida</div>
             
             <div class="filtros-container" id="filtros">
                 <button class="filtro-btn ativo" data-filtro="todos" onclick="filtrarNoticias('todos')">📰 TODAS <span class="contador">{len(noticias)}</span></button>
                 <button class="filtro-btn" data-filtro="destaques" onclick="filtrarNoticias('destaques')">⭐ DESTAQUES <span class="contador">{len(destaques)}</span></button>
                 <button class="filtro-btn" data-filtro="antifa" onclick="filtrarNoticias('antifa')">🏴 ANTIFA <span class="contador">{len(antifa)}</span></button>
                 <button class="filtro-btn" data-filtro="geopolitica" onclick="filtrarNoticias('geopolitica')">⚔️ GEOPOLÍTICA <span class="contador">{len(geopolitica)}</span></button>
-                <button class="filtro-btn" data-filtro="nacional" onclick="filtrarNoticias('nacional')">📰 NACIONAL <span class="contador">{len(nacionais)}</span></button>
+                <button class="filtro-btn" data-filtro="nacional" onclick="filtrarNoticias('nacional')">🇧🇷 NACIONAL <span class="contador">{len(nacionais)}</span></button>
                 <button class="filtro-btn" data-filtro="internacional" onclick="filtrarNoticias('internacional')">🌎 INTERNACIONAL <span class="contador">{len(internacionais)}</span></button>
             </div>
             
@@ -2087,22 +2136,10 @@ def home():
         </div>
         
         <div class="grid-principal" id="grid-noticias">
-            <div class="coluna" id="coluna-antifa" data-categoria="antifa">
-                <h2>🏴 ANTIFA <span class="badge" id="contador-antifa">{len(antifa)}</span></h2>
-                <div id="noticias-antifa">{antifa_html if antifa_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando movimentos de resistência...</p></div>'}</div>
-            </div>
-            <div class="coluna" id="coluna-geopolitica" data-categoria="geopolitica">
-                <h2>⚔️ GEOPOLÍTICA <span class="badge" id="contador-geopolitica">{len(geopolitica)}</span></h2>
-                <div id="noticias-geopolitica">{geo_html if geo_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando conflitos e análises...</p></div>'}</div>
-            </div>
-            <div class="coluna" id="coluna-nacional" data-categoria="nacional">
-                <h2>📰 NACIONAL <span class="badge" id="contador-nacional">{len(nacionais)}</span></h2>
-                <div id="noticias-nacional">{nacional_html if nacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias do Brasil...</p></div>'}</div>
-            </div>
-            <div class="coluna" id="coluna-internacional" data-categoria="internacional">
-                <h2>🌎 INTERNACIONAL <span class="badge" id="contador-internacional">{len(internacionais)}</span></h2>
-                <div id="noticias-internacional">{internacional_html if internacional_html else '<div class="mensagem-vazia"><div class="loading-animation"></div><p>Buscando notícias do mundo...</p></div>'}</div>
-            </div>
+            {antifa_coluna}
+            {geo_coluna}
+            {nacional_coluna}
+            {internacional_coluna}
         </div>
         
         <div class="footer">
@@ -2118,9 +2155,9 @@ def home():
                 <span>🇧🇷 {len(nacionais)}</span>
                 <span>🌎 {len(internacionais)}</span>
             </div>
-            <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação com propósito</div>
-            <div class="footer-copyright" style="color: #555;">120+ fontes • Atualizado a cada 10 minutos • Notícias duram até 3 dias • Destaques trocam a cada 6h</div>
-            <div class="footer-versao">v29.6 • 120+ Fontes + Glint Trade • PWA Offline • Destaques CORRIGIDOS • Contador 194</div>
+            <div class="footer-copyright">SHARP - FRONT 16 RJ • Informação fresca sempre</div>
+            <div class="footer-copyright" style="color: #555;">120+ fontes • Atualizado a cada 10 minutos • Notícias duram 5 horas • Destaques trocam a cada 3h</div>
+            <div class="footer-versao">v30.0 • 120+ Fontes + Glint Trade • PWA Offline • Notícias sempre frescas • Contador 235</div>
         </div>
 
         <script>
@@ -2160,6 +2197,35 @@ def home():
                     colunas.forEach(col => col.style.display = col.dataset.categoria === 'internacional' ? 'block' : 'none');
                     destaques.style.display = 'none';
                     break;
+            }}
+        }}
+        
+        function verMais(categoria) {{
+            const noticias = document.querySelectorAll(`#noticias-${{categoria}} .noticia`);
+            let visiveis = 0;
+            
+            noticias.forEach(noticia => {{
+                if (noticia.style.display === 'block' || noticia.style.display === '') {{
+                    visiveis++;
+                }}
+            }});
+            
+            let paraMostrar = 0;
+            noticias.forEach((noticia, index) => {{
+                if (index >= visiveis && index < visiveis + 12) {{
+                    noticia.style.display = 'block';
+                    paraMostrar++;
+                }}
+            }});
+            
+            if (paraMostrar === 0) {{
+                const btn = event.target;
+                btn.textContent = 'Não há mais notícias';
+                btn.disabled = true;
+                setTimeout(() => {{
+                    btn.textContent = 'Ver mais ↓';
+                    btn.disabled = false;
+                }}, 2000);
             }}
         }}
         
@@ -2207,7 +2273,7 @@ def manifest():
     return jsonify({
         "name": "SHARP - FRONT 16 RJ",
         "short_name": "SHARP 16",
-        "description": "Informação antifascista - Nacional e Internacional",
+        "description": "Informação antifascista - Sempre fresca",
         "start_url": "/",
         "display": "standalone",
         "background_color": "#0a0a0a",
@@ -2234,7 +2300,7 @@ def manifest():
 def service_worker():
     js = '''
 // Service Worker para SHARP - FRONT 16 RJ
-const CACHE_NAME = 'sharp-front-16-v6';
+const CACHE_NAME = 'sharp-front-16-v7';
 const urlsToCache = [
     '/',
     '/manifest.json',
@@ -2315,6 +2381,22 @@ def stats_page():
         fontes_count[n.fonte] = fontes_count.get(n.fonte, 0) + 1
     fontes_ordenadas = sorted(fontes_count.items(), key=lambda x: x[1], reverse=True)
     
+    # Calcula idade média das notícias
+    idades = []
+    agora = datetime.now()
+    for n in noticias:
+        try:
+            if ' ' in n.data_coleta:
+                data = datetime.strptime(n.data_coleta, '%Y-%m-%d %H:%M')
+            else:
+                data = datetime.strptime(n.data_coleta, '%Y-%m-%d')
+            horas = (agora - data).total_seconds() / 3600
+            idades.append(horas)
+        except:
+            pass
+    
+    idade_media = sum(idades) / len(idades) if idades else 0
+    
     html_fontes = ''
     for fonte, count in fontes_ordenadas[:20]:
         html_fontes += f'<li>{fonte}: {count} notícias</li>'
@@ -2348,7 +2430,9 @@ def stats_page():
                 <p><strong>Fontes ativas (RSS):</strong> {radar.estatisticas['fontes_funcionando']} de 120</p>
                 <p><strong>Fontes externas nesta sessão:</strong> {radar.estatisticas['fontes_externas']}</p>
                 <p><strong>Horário:</strong> {horario_brasilia()}</p>
-                <p><strong>Próxima rotação de destaques:</strong> {config.DURACAO_DESTAQUE_HORAS} horas</p>
+                <p><strong>Idade média das notícias:</strong> {idade_media:.1f} horas</p>
+                <p><strong>Duração máxima:</strong> 5 horas</p>
+                <p><strong>Rotação de destaques:</strong> a cada 3 horas</p>
             </div>
             
             <h2>Distribuição por categoria:</h2>
@@ -2403,8 +2487,9 @@ def api_stats():
         'total_varreduras': radar.estatisticas['total_varreduras'],
         'ultima_atualizacao': horario_brasilia(),
         'hora_brasilia': hora_brasilia(),
-        'versao': '29.6',
-        'destaques_rotacao_horas': config.DURACAO_DESTAQUE_HORAS
+        'versao': '30.0',
+        'duracao_noticias_horas': 5,
+        'rotacao_destaques_horas': 3
     })
 
 # ============================================
@@ -2426,7 +2511,7 @@ def update_cache():
 
 def inicializar():
     logger.info("="*70)
-    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v29.6 - DESTAQUES CORRIGIDOS")
+    logger.info("SHARP - FRONT 16 RJ - RADAR ANTIFA v30.0 - NOTÍCIAS FRESCAS")
     logger.info("="*70)
     
     noticias = radar._carregar_noticias()
@@ -2446,7 +2531,7 @@ def inicializar():
     logger.info(f"  DESTAQUES: {len(destaques)}")
     logger.info(f"Fontes configuradas: {len(FONTES_CONFIAVEIS)} (120 fontes)")
     logger.info(f"Fontes externas: ATIVAS (Glint Trade anonimizado)")
-    logger.info(f"Contador de visitas: iniciando em {total_visitas}")
+    logger.info(f"Contador de visitas: {total_visitas}")
     
     # Inicializa sistema de destaques se necessário
     if not sistema_destaques.destaques_atuais and len(noticias) >= 5:
@@ -2468,15 +2553,15 @@ def inicializar():
     logger.info("✅ 120+ fontes organizadas por categoria")
     logger.info("✅ Classificador automático de notícias")
     logger.info("✅ Detector de duplicatas por similaridade")
-    logger.info("✅ Expurgo automático após 3 dias")
-    logger.info("✅ Sistema de prioridade (notícias importantes duram mais)")
-    logger.info("✅ Rodízio de fontes para não sobrecarregar")
+    logger.info("✅ Expurgo automático após 5 horas (NOTÍCIAS SEMPRE FRESCAS)")
+    logger.info("✅ Sistema de rodízio de fontes")
     logger.info("✅ PWA / MODO OFFLINE - Leia sem internet!")
-    logger.info(f"✅ Destaques rotativos a cada {config.DURACAO_DESTAQUE_HORAS} horas")
-    logger.info(f"✅ Contador iniciando em {total_visitas} (a partir de 194)")
+    logger.info(f"✅ Destaques rotativos a cada 3 horas")
+    logger.info(f"✅ Contador: {total_visitas} visitas")
     logger.info("✅ FONTE EXTERNA ATIVA: Glint Trade (anonimizado como 'Análise Global')")
     logger.info("✅ LOOP DO RADAR CORRIGIDO - Atualizações a cada 10 minutos")
-    logger.info("✅ DESTAQUES CORRIGIDOS - Aparecem desde a primeira execução")
+    logger.info("✅ BOTÕES 'VER MAIS' em cada categoria")
+    logger.info("✅ Notícias mostram idade (min/horas)")
     logger.info("="*70)
 
 def signal_handler(sig, frame):
